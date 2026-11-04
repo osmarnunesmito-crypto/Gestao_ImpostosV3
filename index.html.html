@@ -1,0 +1,2428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><script src="https://myhub.ia.br/canvas-vendor/tailwind.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProjectMaster Pro</title>
+  <meta name="description" content="Gerenciador de projetos completo, intuitivo e acessível para qualquer área.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #6B2D9B;
+      --primary-dark: #4A1D96;
+      --primary-light: #8E44AD;
+      --gold: #D4AF37;
+      --gold-light: #FFD700;
+      --white: #FFFFFF;
+      --bg-dark: #1a0b2e;
+      --bg-card: rgba(255, 255, 255, 0.06);
+      --bg-glass: rgba(255, 255, 255, 0.08);
+      --border-glass: rgba(255, 255, 255, 0.12);
+      --text-main: #FFFFFF;
+      --text-muted: #b8b0c8;
+      --green: #2ecc71;
+      --yellow: #f1c40f;
+      --orange: #e67e22;
+      --red: #e74c3c;
+      --blue: #3498db;
+      --gray: #95a5a6;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body {
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #2d1b4e 50%, var(--primary-dark) 100%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      overflow: hidden;
+    }
+
+    .app { display: flex; height: 100vh; width: 100vw; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      background: linear-gradient(180deg, rgba(74, 29, 150, 0.95), rgba(26, 11, 46, 0.98));
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border-glass);
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition);
+      z-index: 1000;
+    }
+    .sidebar.collapsed { margin-left: -280px; }
+    .brand {
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-glass);
+    }
+    .brand-icon {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      display: grid; place-items: center;
+      color: var(--primary-dark);
+      font-size: 1.25rem;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
+    }
+    .brand-text h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; }
+    .brand-text span { font-size: 0.75rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
+
+    .nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      margin-bottom: 6px;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: var(--bg-glass);
+      color: var(--white);
+      transform: translateX(4px);
+    }
+    .nav-item.active::before {
+      content: '';
+      position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      width: 4px; height: 24px;
+      background: var(--gold);
+      border-radius: 0 4px 4px 0;
+    }
+    .nav-item i { width: 22px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border-glass);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* Main wrapper */
+    .main-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .topbar {
+      height: 70px;
+      background: rgba(26, 11, 46, 0.7);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-glass);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      z-index: 900;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 16px; }
+    .menu-toggle {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      color: var(--white);
+      cursor: pointer;
+      display: grid; place-items: center;
+      transition: var(--transition);
+    }
+    .menu-toggle:hover { background: var(--primary); }
+    .page-title { font-size: 1.25rem; font-weight: 600; }
+    .topbar-actions { display: flex; gap: 12px; }
+
+    /* Content */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      position: relative;
+    }
+    .content::-webkit-scrollbar { width: 8px; }
+    .content::-webkit-scrollbar-track { background: transparent; }
+    .content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+    /* Glass card */
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+    .glass-card:hover { transform: translateY(-2px); border-color: rgba(212, 175, 55, 0.25); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--primary-dark);
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5); }
+    .btn-secondary {
+      background: var(--bg-glass);
+      color: var(--white);
+      border: 1px solid var(--border-glass);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+    .btn-danger {
+      background: rgba(231, 76, 60, 0.15);
+      color: var(--red);
+      border: 1px solid rgba(231, 76, 60, 0.3);
+    }
+    .btn-danger:hover { background: rgba(231, 76, 60, 0.25); }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+    .btn-icon { width: 34px; height: 34px; padding: 0; border-radius: 8px; }
+
+    /* Badges */
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .bg-green { background: rgba(46, 204, 113, 0.15); color: var(--green); }
+    .bg-yellow { background: rgba(241, 196, 15, 0.15); color: var(--yellow); }
+    .bg-orange { background: rgba(230, 126, 34, 0.15); color: var(--orange); }
+    .bg-red { background: rgba(231, 76, 60, 0.15); color: var(--red); }
+    .bg-blue { background: rgba(52, 152, 219, 0.15); color: var(--blue); }
+    .bg-gray { background: rgba(149, 165, 166, 0.15); color: var(--gray); }
+    .bg-purple { background: rgba(107, 45, 155, 0.25); color: #c39bd3; }
+
+    /* Dashboard */
+    .dashboard-header { margin-bottom: 24px; }
+    .dashboard-header h2 { font-size: 1.75rem; margin-bottom: 6px; }
+    .dashboard-header p { color: var(--text-muted); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card { padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+    .stat-card .icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: grid; place-items: center; font-size: 1.1rem;
+      background: rgba(255,255,255,0.08);
+      color: var(--gold);
+    }
+    .stat-card .value { font-size: 2rem; font-weight: 700; }
+    .stat-card .label { font-size: 0.85rem; color: var(--text-muted); }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .project-card { padding: 20px; cursor: pointer; position: relative; overflow: hidden; }
+    .project-card::after {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, var(--gold), var(--primary-light));
+      opacity: 0.7;
+    }
+    .project-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .project-card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+    .project-card-meta { font-size: 0.8rem; color: var(--text-muted); }
+    .project-card-footer { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .progress-bar {
+      width: 100%; height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light));
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    /* Section headers */
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .section-title { font-size: 1.4rem; font-weight: 600; }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 8px; overflow-x: auto;
+      border-bottom: 1px solid var(--border-glass);
+      padding-bottom: 8px; margin-bottom: 20px;
+    }
+    .tab {
+      padding: 10px 16px; border-radius: var(--radius-sm);
+      white-space: nowrap; cursor: pointer; color: var(--text-muted);
+      transition: var(--transition); font-size: 0.9rem; font-weight: 500;
+    }
+    .tab:hover { background: var(--bg-glass); color: var(--white); }
+    .tab.active { background: rgba(212, 175, 55, 0.15); color: var(--gold); }
+
+    /* Forms */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
+    .form-input, .form-select, .form-textarea {
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--white);
+      font-size: 0.95rem;
+      transition: var(--transition);
+      width: 100%;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+    }
+    .form-textarea { min-height: 100px; resize: vertical; }
+    .form-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+      margin-top: 4px;
+    }
+    .section-subtitle {
+      width: 100%;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .modal-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    /* Lists / Tables */
+    .list { display: flex; flex-direction: column; gap: 12px; }
+    .list-item {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      transition: var(--transition);
+    }
+    .list-item:hover { border-color: rgba(212, 175, 55, 0.25); }
+    .list-item-content { flex: 1; }
+    .list-item-title { font-weight: 600; margin-bottom: 4px; }
+    .list-item-meta { font-size: 0.8rem; color: var(--text-muted); }
+    .list-item-actions { display: flex; gap: 8px; }
+
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { padding: 12px; text-align: left; font-size: 0.9rem; }
+    .data-table th { color: var(--gold); font-weight: 600; border-bottom: 1px solid var(--border-glass); }
+    .data-table td { border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-muted); }
+    .data-table tr:hover td { background: rgba(255,255,255,0.03); color: var(--white); }
+
+    /* Risk matrix */
+    .risk-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 320px; }
+    .risk-cell {
+      aspect-ratio: 1;
+      border-radius: var(--radius-sm);
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 0.85rem;
+      border: 1px solid var(--border-glass);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 48px 24px;
+      color: var(--text-muted);
+    }
+    .empty-state i { font-size: 3rem; color: var(--gold); margin-bottom: 16px; opacity: 0.7; }
+    .empty-state h3 { color: var(--white); margin-bottom: 8px; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 2000;
+      padding: 24px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.show { display: flex; opacity: 1; }
+    .modal {
+      background: linear-gradient(180deg, #2d1b4e, #1a0b2e);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius);
+      width: 100%; max-width: 640px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      box-shadow: var(--shadow);
+      transform: translateY(20px);
+      transition: transform 0.25s ease;
+    }
+    .modal-overlay.show .modal { transform: translateY(0); }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 1.2rem; font-weight: 600; }
+    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.25rem; cursor: pointer; }
+    .modal-close:hover { color: var(--white); }
+    .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border-glass); display: flex; justify-content: flex-end; gap: 10px; }
+
+    /* Toast */
+    #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 3000; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      border-left: 4px solid var(--gold);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      color: var(--white);
+      box-shadow: var(--shadow);
+      animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+      max-width: 320px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+
+    /* Utilities */
+    .hidden { display: none !important; }
+    .text-gold { color: var(--gold); }
+    .text-muted { color: var(--text-muted); }
+    .mt-4 { margin-top: 16px; }
+    .mb-4 { margin-bottom: 16px; }
+    .flex { display: flex; }
+    .gap-2 { gap: 8px; }
+
+    /* Compare bars (planned vs executed) */
+    .compare-bar-group { display: flex; flex-direction: column; gap: 10px; }
+    .compare-bar-row { display: grid; grid-template-columns: 110px 1fr 50px; align-items: center; gap: 10px; }
+    .compare-bar-label { font-size: 0.8rem; color: var(--text-muted); text-align: right; }
+    .compare-bar-track { height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; }
+    .compare-bar-fill { height: 100%; border-radius: 5px; transition: width 0.6s ease; }
+    .compare-bar-value { font-size: 0.8rem; font-weight: 700; color: var(--white); text-align: right; }
+    .progress-fill-green { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+    .progress-fill-blue { background: linear-gradient(90deg, #2980b9, #3498db); }
+    .progress-fill-red { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+
+    /* Deadline indicators */
+    .deadline-ok { color: var(--green) !important; }
+    .deadline-warning { color: var(--yellow) !important; }
+    .deadline-danger { color: var(--red) !important; }
+
+    /* Financial indicators */
+    .financial-ok { color: var(--green) !important; }
+    .financial-warning { color: var(--orange) !important; }
+    .financial-danger { color: var(--red) !important; }
+
+    /* Quick action on cards */
+    .project-card-actions { position: absolute; top: 12px; right: 12px; opacity: 0; transition: var(--transition); }
+    .project-card:hover .project-card-actions { opacity: 1; }
+    @media (max-width: 768px) { .project-card-actions { opacity: 1; } }
+
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; height: 100vh; }
+      .content { padding: 16px; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .tabs { flex-wrap: nowrap; }
+      .modal { max-height: 95vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-icon"><i class="fas fa-crown"></i></div>
+        <div class="brand-text">
+          <h1>ProjectMaster</h1>
+          <span>Pro Edition</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <div class="nav-item active" data-view="dashboard"><i class="fas fa-th-large"></i><span>Dashboard</span></div>
+        <div class="nav-item" data-view="projects"><i class="fas fa-folder-open"></i><span>Projetos</span></div>
+        <div class="nav-item" data-view="project-detail" id="nav-project-detail" style="opacity:0.5;pointer-events:none;"><i class="fas fa-project-diagram"></i><span>Detalhes do Projeto</span></div>
+      </nav>
+      <div class="sidebar-footer">
+        ProjectMaster Pro v1.0<br>Salvo automaticamente
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menu-toggle" aria-label="Alternar menu"><i class="fas fa-bars"></i></button>
+          <h2 class="page-title" id="page-title">Dashboard</h2>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary" id="btn-new-project"><i class="fas fa-plus"></i> Novo Projeto</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <!-- Dashboard -->
+        <section id="dashboard-view">
+          <div class="dashboard-header">
+            <h2>Visão Geral</h2>
+            <p>Acompanhe todos os seus projetos em um só lugar.</p>
+          </div>
+          <div class="stats-grid" id="dashboard-stats"></div>
+          <div class="section-header">
+            <h3 class="section-title">Seus Projetos</h3>
+            <button class="btn btn-secondary btn-sm" id="btn-view-all-projects"><i class="fas fa-list"></i> Ver todos</button>
+          </div>
+          <div id="dashboard-projects" class="projects-grid"></div>
+        </section>
+
+        <!-- Projects list -->
+        <section id="projects-view" class="hidden">
+          <div class="section-header">
+            <h2 class="section-title">Todos os Projetos</h2>
+            <button class="btn btn-primary" id="btn-new-project-2"><i class="fas fa-plus"></i> Novo Projeto</button>
+          </div>
+          <div id="projects-list" class="projects-grid"></div>
+        </section>
+
+        <!-- Project detail -->
+        <section id="project-detail-view" class="hidden">
+          <div class="glass-card" style="padding:20px;margin-bottom:20px;">
+            <div class="section-header" style="margin-bottom:12px;">
+              <div>
+                <h2 id="pd-title" class="section-title">Nome do Projeto</h2>
+                <p id="pd-meta" class="text-muted" style="margin-top:4px;"></p>
+              </div>
+              <div class="flex gap-2">
+                <button class="btn btn-secondary btn-sm" id="btn-edit-project"><i class="fas fa-edit"></i> Editar</button>
+                <button class="btn btn-danger btn-sm" id="btn-delete-project"><i class="fas fa-trash"></i> Excluir</button>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+              <span id="pd-status" class="badge"></span>
+              <span id="pd-type" class="badge bg-purple"></span>
+              <span id="pd-progress" class="badge bg-blue"></span>
+              <span id="pd-deadline" class="badge"></span>
+              <span id="pd-health" class="badge"></span>
+            </div>
+            <div class="progress-bar" style="margin-top:16px;"><div class="progress-fill" id="pd-progress-bar" style="width:0%"></div></div>
+          </div>
+
+          <!-- Financial & Performance Control -->
+          <div class="glass-card" style="padding:20px;margin-bottom:20px;">
+            <div class="section-header" style="margin-bottom:12px;">
+              <div>
+                <h3 class="section-title">Controle Financeiro e Desempenho</h3>
+                <p class="text-muted" style="font-size:0.8rem;margin-top:4px;">Acompanhe orçamento planejado × executado e o desempenho físico × planejado em tempo real.</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="btn-edit-financials"><i class="fas fa-edit"></i> Editar valores</button>
+            </div>
+            <div class="form-grid" id="financial-summary" style="margin-bottom:16px;"></div>
+            <h4 style="font-size:0.9rem;color:var(--gold);margin-bottom:10px;">Planejado × Executado (%)</h4>
+            <div class="compare-bar-group" id="performance-bars"></div>
+            <div id="financial-alerts" class="mt-4"></div>
+          </div>
+
+          <div class="tabs" id="project-tabs">
+            <div class="tab active" data-tab="overview"><i class="fas fa-info-circle"></i> Visão Geral</div>
+            <div class="tab" data-tab="scope"><i class="fas fa-bullseye"></i> Escopo</div>
+            <div class="tab" data-tab="outofscope"><i class="fas fa-ban"></i> Fora do Escopo</div>
+            <div class="tab" data-tab="phases"><i class="fas fa-tasks"></i> Fases e Tarefas</div>
+            <div class="tab" data-tab="schedule"><i class="fas fa-calendar-alt"></i> Cronograma</div>
+            <div class="tab" data-tab="risks"><i class="fas fa-exclamation-triangle"></i> Riscos</div>
+            <div class="tab" data-tab="lessons"><i class="fas fa-lightbulb"></i> Lições</div>
+            <div class="tab" data-tab="issues"><i class="fas fa-bug"></i> Problemas</div>
+            <div class="tab" data-tab="stakeholders"><i class="fas fa-users"></i> Stakeholders</div>
+            <div class="tab" data-tab="notes"><i class="fas fa-sticky-note"></i> Observações</div>
+            <div class="tab" data-tab="history"><i class="fas fa-history"></i> Histórico</div>
+            <div class="tab" data-tab="report"><i class="fas fa-file-alt"></i> Relatório</div>
+          </div>
+
+          <div id="tab-content">
+            <!-- Overview -->
+            <div id="tab-overview" class="tab-pane">
+              <div class="form-grid">
+                <div class="form-group"><span class="form-label">Objetivo Principal</span><p id="overview-objective" class="text-muted"></p></div>
+                <div class="form-group"><span class="form-label">Critérios de Sucesso</span><p id="overview-criteria" class="text-muted"></p></div>
+                <div class="form-group"><span class="form-label">Premissas</span><p id="overview-assumptions" class="text-muted"></p></div>
+                <div class="form-group"><span class="form-label">Restrições</span><p id="overview-constraints" class="text-muted"></p></div>
+              </div>
+              <div class="mt-4">
+                <h4 class="section-title" style="font-size:1.1rem;">Próximas Entregas</h4>
+                <div id="overview-deliverables" class="list mt-4"></div>
+              </div>
+            </div>
+
+            <!-- Scope -->
+            <div id="tab-scope" class="tab-pane hidden">
+              <div class="section-header"><h3 class="section-title">Escopo do Projeto</h3></div>
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label class="form-label">Objetivo Principal</label>
+                  <textarea class="form-textarea" id="scope-objective" placeholder="Ex: Construir uma loja virtual para aumentar as vendas em 20% no próximo trimestre."></textarea>
+                  <p class="form-hint">Descreva, de forma clara, o resultado que o projeto deve alcançar. Pense no &quot;para quê&quot; do projeto.</p>
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">Critérios de Sucesso</label>
+                  <textarea class="form-textarea" id="scope-criteria" placeholder="Ex: Loja no ar até 15/12; 100 produtos cadastrados; integração com meios de pagamento aprovada nos testes."></textarea>
+                  <p class="form-hint">Quais indicadores ou condições vão provar que o projeto deu certo? Seja específico e mensurável.</p>
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">Premissas</label>
+                  <textarea class="form-textarea" id="scope-assumptions" placeholder="Ex: A equipe de TI estará disponível; o orçamento será liberado até o início; o fornecedor entregará no prazo."></textarea>
+                  <p class="form-hint">O que você está considerando como verdadeiro para o projeto acontecer? Registrar ajuda a evitar surpresas.</p>
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">Restrições</label>
+                  <textarea class="form-textarea" id="scope-constraints" placeholder="Ex: Orçamento máximo de R$ 50.000; prazo de 3 meses; uso obrigatório de determinada plataforma."></textarea>
+                  <p class="form-hint">Limitações que o projeto deve respeitar: tempo, dinheiro, recursos, tecnologia, normas etc.</p>
+                </div>
+              </div>
+              <div class="mt-4">
+                <div class="section-header" style="margin-bottom:12px;flex-direction:column;align-items:flex-start;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                    <h4 class="section-title" style="font-size:1.1rem;">Entregas Principais</h4>
+                    <button class="btn btn-primary btn-sm" id="btn-add-deliverable"><i class="fas fa-plus"></i> Adicionar</button>
+                  </div>
+                  <p class="section-subtitle">Liste os produtos, documentos ou resultados concretos que devem ser entregues ao final de cada etapa. Ex: &quot;Projeto arquitetônico aprovado&quot;, &quot;Site publicado&quot;, &quot;Treinamento realizado&quot;.</p>
+                </div>
+                <div id="scope-deliverables-list" class="list"></div>
+              </div>
+              <div class="mt-4" style="text-align:right;">
+                <button class="btn btn-primary" id="btn-save-scope"><i class="fas fa-save"></i> Salvar Escopo</button>
+              </div>
+            </div>
+
+            <!-- Out of scope -->
+            <div id="tab-outofscope" class="tab-pane hidden">
+              <div class="section-header" style="flex-direction:column;align-items:flex-start;">
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                  <h3 class="section-title">Fora do Escopo</h3>
+                  <button class="btn btn-primary btn-sm" id="btn-add-outofscope"><i class="fas fa-plus"></i> Item</button>
+                </div>
+                <p class="section-subtitle">Registre aqui o que o projeto NÃO vai fazer. Isso evita que outras pessoas criem expectativas incorretas. Ex: &quot;Não inclui compra de móveis&quot;, &quot;Não cobre manutenção após a entrega&quot;.</p>
+              </div>
+              <div id="outofscope-list" class="list"></div>
+            </div>
+
+            <!-- Phases -->
+            <div id="tab-phases" class="tab-pane hidden">
+              <div class="section-header"><h3 class="section-title">Fases e Tarefas (WBS)</h3><button class="btn btn-primary btn-sm" id="btn-add-phase"><i class="fas fa-plus"></i> Fase</button></div>
+              <div id="phases-list"></div>
+            </div>
+
+            <!-- Schedule -->
+            <div id="tab-schedule" class="tab-pane hidden">
+              <div class="section-header">
+                <h3 class="section-title">Cronograma</h3>
+                <div class="flex gap-2">
+                  <select class="form-select" id="filter-schedule-status" style="width:auto;"><option value="">Todos os status</option><option value="pending">Pendente</option><option value="in-progress">Em andamento</option><option value="completed">Concluída</option></select>
+                  <select class="form-select" id="filter-schedule-priority" style="width:auto;"><option value="">Todas as prioridades</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option></select>
+                </div>
+              </div>
+              <div id="schedule-list" class="list"></div>
+            </div>
+
+            <!-- Risks -->
+            <div id="tab-risks" class="tab-pane hidden">
+              <div class="section-header"><h3 class="section-title">Gestão de Riscos</h3><button class="btn btn-primary btn-sm" id="btn-add-risk"><i class="fas fa-plus"></i> Risco</button></div>
+              <div style="display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start;">
+                <div id="risks-list" class="list"></div>
+                <div class="glass-card" style="padding:16px;">
+                  <h4 style="font-size:0.95rem;margin-bottom:12px;color:var(--gold);">Matriz de Riscos</h4>
+                  <div class="risk-matrix">
+                    <div class="risk-cell bg-green">B/P</div><div class="risk-cell bg-yellow">B/M</div><div class="risk-cell bg-red">B/A</div>
+                    <div class="risk-cell bg-yellow">M/P</div><div class="risk-cell bg-orange">M/M</div><div class="risk-cell bg-red">M/A</div>
+                    <div class="risk-cell bg-yellow">A/P</div><div class="risk-cell bg-orange">A/M</div><div class="risk-cell bg-red">A/A</div>
+                  </div>
+                  <p style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;">P=Probabilidade / I=Impacto</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lessons -->
+            <div id="tab-lessons" class="tab-pane hidden">
+              <div class="section-header"><h3 class="section-title">Lições Aprendidas</h3><button class="btn btn-primary btn-sm" id="btn-add-lesson"><i class="fas fa-plus"></i> Lição</button></div>
+              <div id="lessons-list" class="list"></div>
+            </div>
+
+            <!-- Issues -->
+            <div id="tab-issues" class="tab-pane hidden">
+              <div class="section-header" style="flex-direction:column;align-items:flex-start;">
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                  <h3 class="section-title">Problemas / Issues</h3>
+                  <button class="btn btn-primary btn-sm" id="btn-add-issue"><i class="fas fa-plus"></i> Problema</button>
+                </div>
+                <p class="section-subtitle">Registre imprevistos que já aconteceram e exigem ação: bugs, falhas, atrasos, conflitos ou bloqueios. Acompanhe a severidade para priorizar soluções.</p>
+              </div>
+              <div id="issues-list" class="list"></div>
+            </div>
+
+            <!-- Stakeholders -->
+            <div id="tab-stakeholders" class="tab-pane hidden">
+              <div class="section-header" style="flex-direction:column;align-items:flex-start;">
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                  <h3 class="section-title">Stakeholders</h3>
+                  <button class="btn btn-primary btn-sm" id="btn-add-stakeholder"><i class="fas fa-plus"></i> Stakeholder</button>
+                </div>
+                <p class="section-subtitle">Mapeie as pessoas ou áreas que têm interesse no projeto. Entender quem tem mais influência ajuda a direcionar comunicação e decisões.</p>
+              </div>
+              <div id="stakeholders-list" class="list"></div>
+            </div>
+
+            <!-- Notes -->
+            <div id="tab-notes" class="tab-pane hidden">
+              <div class="section-header" style="flex-direction:column;align-items:flex-start;">
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                  <h3 class="section-title">Observações</h3>
+                  <button class="btn btn-primary btn-sm" id="btn-add-note"><i class="fas fa-plus"></i> Anotação</button>
+                </div>
+                <p class="section-subtitle">Use este espaço para anotações livres: ideias, pontos de atenção, conversas importantes ou qualquer informação que não caiba nos outros campos.</p>
+              </div>
+              <div id="notes-list" class="list"></div>
+            </div>
+
+            <!-- History -->
+            <div id="tab-history" class="tab-pane hidden">
+              <div class="section-header" style="flex-direction:column;align-items:flex-start;">
+                <h3 class="section-title">Histórico de Alterações</h3>
+                <p class="section-subtitle">Todas as principais mudanças no projeto são registradas automaticamente. Útil para auditar o que foi alterado e quando.</p>
+              </div>
+              <div id="history-list" class="list"></div>
+            </div>
+
+            <!-- Report -->
+            <div id="tab-report" class="tab-pane hidden">
+              <div class="section-header" style="flex-direction:column;align-items:flex-start;">
+                <h3 class="section-title">Relatório e Exportação</h3>
+                <p class="section-subtitle">Gere um resumo executivo do projeto para compartilhar com a equipe ou a direção. Você também pode exportar todos os dados em JSON para backup.</p>
+              </div>
+              <div class="glass-card" style="padding:20px;">
+                <p class="text-muted mb-4">Gere um resumo executivo do projeto ou exporte os dados em JSON para backup.</p>
+                <div class="flex gap-2">
+                  <button class="btn btn-primary" id="btn-generate-report"><i class="fas fa-file-alt"></i> Gerar Relatório</button>
+                  <button class="btn btn-secondary" id="btn-export-json"><i class="fas fa-download"></i> Exportar JSON</button>
+                </div>
+                <pre id="report-output" style="margin-top:16px;background:rgba(0,0,0,0.3);padding:16px;border-radius:10px;white-space:pre-wrap;font-size:0.85rem;color:var(--text-muted);max-height:400px;overflow:auto;"></pre>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal genérico -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title">Título</h3>
+        <button class="modal-close" id="modal-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <script>
+    // ===== STATE =====
+    let projects = [];
+    let currentProjectId = null;
+    let currentView = 'dashboard';
+    let currentTab = 'overview';
+
+    const STORAGE_KEY = 'projectmaster_pro_data';
+
+    // ===== UTILS =====
+    const $ = id => document.getElementById(id);
+    const uuid = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+    const statusLabels = {
+      'not-started': 'Não iniciado',
+      'in-progress': 'Em andamento',
+      'paused': 'Pausado',
+      'completed': 'Concluído',
+      'cancelled': 'Cancelado'
+    };
+    const statusClasses = {
+      'not-started': 'bg-gray',
+      'in-progress': 'bg-blue',
+      'paused': 'bg-yellow',
+      'completed': 'bg-green',
+      'cancelled': 'bg-red'
+    };
+    const priorityLabels = { low: 'Baixa', medium: 'Média', high: 'Alta' };
+    const priorityClasses = { low: 'bg-green', medium: 'bg-yellow', high: 'bg-red' };
+
+    // ===== FINANCIAL & DEADLINE HELPERS =====
+    function currencyBRL(value) {
+      const num = Number(value) || 0;
+      return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+    function daysDiff(start, end) {
+      if (!start || !end) return 0;
+      const s = new Date(start + 'T00:00:00');
+      const e = new Date(end + 'T00:00:00');
+      const diff = Math.round((e - s) / (1000 * 60 * 60 * 24));
+      return diff;
+    }
+
+    function projectDeadlineStatus(p) {
+      if (!p.endDate) return { label: 'Sem prazo', class: 'deadline-ok', days: null, status: 'ok' };
+      const days = daysDiff(todayStr(), p.endDate);
+      if (p.status === 'completed') return { label: 'Concluído', class: 'deadline-ok', days, status: 'ok' };
+      if (days < 0) return { label: `Atrasado ${Math.abs(days)} dia(s)`, class: 'deadline-danger', days, status: 'danger' };
+      if (days <= 7) return { label: `${days} dia(s) restantes`, class: 'deadline-warning', days, status: 'warning' };
+      return { label: `${days} dia(s) restantes`, class: 'deadline-ok', days, status: 'ok' };
+    }
+
+    function taskDeadlineStatus(t) {
+      if (!t.dueDate) return { label: '-', class: '', days: null };
+      const days = daysDiff(todayStr(), t.dueDate);
+      if (t.status === 'completed') return { label: 'Concluída', class: 'deadline-ok', days };
+      if (days < 0) return { label: `${Math.abs(days)}d atrasada`, class: 'deadline-danger', days };
+      if (days === 0) return { label: 'Vence hoje', class: 'deadline-warning', days };
+      if (days <= 3) return { label: `${days}d restantes`, class: 'deadline-warning', days };
+      return { label: `${days}d restantes`, class: 'deadline-ok', days };
+    }
+
+    function projectFinancials(p) {
+      const budget = Number(p.budget) || 0;
+      const spent = Number(p.spent) || 0;
+      const committed = Number(p.committed) || 0;
+      const available = budget - spent - committed;
+      const spentPct = budget > 0 ? (spent / budget) * 100 : 0;
+      const committedPct = budget > 0 ? (committed / budget) * 100 : 0;
+      const availablePct = budget > 0 ? (available / budget) * 100 : 0;
+      return { budget, spent, committed, available, spentPct, committedPct, availablePct };
+    }
+
+    function plannedProgress(p) {
+      if (!p.startDate || !p.endDate) return 0;
+      const start = new Date(p.startDate + 'T00:00:00').getTime();
+      const end = new Date(p.endDate + 'T00:00:00').getTime();
+      const now = new Date(todayStr() + 'T00:00:00').getTime();
+      if (now >= end) return 100;
+      if (now <= start) return 0;
+      return Math.round(((now - start) / (end - start)) * 100);
+    }
+
+    function projectHealth(p) {
+      const phys = projectProgress(p);
+      const planned = plannedProgress(p);
+      const fin = projectFinancials(p);
+      const deadline = projectDeadlineStatus(p);
+      let issues = [];
+      if (phys < planned - 10) issues.push('atraso físico');
+      if (fin.spentPct > phys + 15) issues.push('custo acima do físico');
+      if (fin.spentPct > 100) issues.push('estouro orçamentário');
+      if (deadline.status === 'danger') issues.push('prazo vencido');
+      if (deadline.status === 'warning' && phys < planned - 5) issues.push('risco de atraso');
+      if (!issues.length) return { label: 'Saudável', class: 'bg-green' };
+      if (issues.length === 1) return { label: 'Atenção', class: 'bg-yellow' };
+      return { label: 'Crítico', class: 'bg-red' };
+    }
+
+    // Opções padrão que podem ser estendidas pelo usuário
+    const defaultTypeOptions = [
+      { value: 'construction', label: 'Construção Civil' },
+      { value: 'architecture', label: 'Arquitetura' },
+      { value: 'technology', label: 'Tecnologia' },
+      { value: 'marketing', label: 'Marketing' },
+      { value: 'events', label: 'Eventos' },
+      { value: 'consulting', label: 'Consultoria' },
+      { value: 'other', label: 'Outro' }
+    ];
+
+    const CUSTOM_OPTIONS_KEY = 'projectmaster_pro_custom_options';
+    let customOptions = {
+      projectType: [],
+      lessonCategory: [],
+      issueSeverity: [],
+      stakeholderInfluence: [],
+      taskPriority: []
+    };
+
+    // ===== STORAGE =====
+    function loadData() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) projects = JSON.parse(data);
+      } catch (e) {
+        console.warn('Erro ao carregar dados:', e);
+        projects = [];
+      }
+      loadCustomOptions();
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+      } catch (e) {
+        console.warn('Erro ao salvar dados:', e);
+      }
+    }
+
+    function loadCustomOptions() {
+      try {
+        const data = localStorage.getItem(CUSTOM_OPTIONS_KEY);
+        if (data) customOptions = { ...customOptions, ...JSON.parse(data) };
+      } catch (e) {
+        console.warn('Erro ao carregar opções customizadas:', e);
+      }
+    }
+
+    function saveCustomOptions() {
+      try {
+        localStorage.setItem(CUSTOM_OPTIONS_KEY, JSON.stringify(customOptions));
+      } catch (e) {
+        console.warn('Erro ao salvar opções customizadas:', e);
+      }
+    }
+
+    function addHistory(projectId, action) {
+      const p = getProject(projectId);
+      if (!p) return;
+      if (!p.history) p.history = [];
+      p.history.unshift({ id: uuid(), action, date: new Date().toISOString() });
+      saveData();
+    }
+
+    // ===== PROJECTS =====
+    function getProject(id) { return projects.find(p => p.id === id); }
+
+    function createProject(project) {
+      projects.push(project);
+      saveData();
+      addHistory(project.id, 'Projeto criado');
+    }
+
+    function updateProject(id, updates) {
+      const idx = projects.findIndex(p => p.id === id);
+      if (idx >= 0) {
+        projects[idx] = { ...projects[idx], ...updates, updatedAt: new Date().toISOString() };
+        saveData();
+        addHistory(id, 'Projeto atualizado');
+      }
+    }
+
+    function deleteProject(id) {
+      projects = projects.filter(p => p.id !== id);
+      saveData();
+      if (currentProjectId === id) {
+        currentProjectId = null;
+        switchView('dashboard');
+      }
+      render();
+      showToast('Projeto excluído com sucesso', 'success');
+    }
+
+    // ===== CALCULATIONS =====
+    function projectProgress(project) {
+      const tasks = project.phases?.flatMap(f => f.tasks || []) || [];
+      if (!tasks.length) return 0;
+      const completed = tasks.filter(t => t.status === 'completed').length;
+      return Math.round((completed / tasks.length) * 100);
+    }
+
+    function riskLevel(prob, impact) {
+      const map = { low: 1, medium: 2, high: 3 };
+      const score = (map[prob] || 1) * (map[impact] || 1);
+      if (score <= 2) return { level: 'Baixo', class: 'bg-green' };
+      if (score <= 4) return { level: 'Médio', class: 'bg-yellow' };
+      if (score <= 6) return { level: 'Alto', class: 'bg-orange' };
+      return { level: 'Crítico', class: 'bg-red' };
+    }
+
+    function isOverdue(dateStr) {
+      if (!dateStr) return false;
+      return new Date(dateStr) < new Date(new Date().setHours(0,0,0,0));
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      return new Date(dateStr).toLocaleDateString('pt-BR');
+    }
+
+    // ===== RENDER =====
+    function render() {
+      renderDashboard();
+      renderProjectsList();
+      renderProjectDetail();
+      updateNavState();
+    }
+
+    function updateNavState() {
+      const navDetail = $('nav-project-detail');
+      if (currentProjectId) {
+        navDetail.style.opacity = '1';
+        navDetail.style.pointerEvents = 'auto';
+      } else {
+        navDetail.style.opacity = '0.5';
+        navDetail.style.pointerEvents = 'none';
+      }
+    }
+
+    function renderDashboard() {
+      const total = projects.length;
+      const completed = projects.filter(p => p.status === 'completed').length;
+      const inProgress = projects.filter(p => p.status === 'in-progress').length;
+      const atRisk = projects.filter(p => (p.risks || []).some(r => {
+        const rl = riskLevel(r.probability, r.impact);
+        return rl.level === 'Alto' || rl.level === 'Crítico';
+      })).length;
+      const overdueProjects = projects.filter(p => projectDeadlineStatus(p).status === 'danger').length;
+      const warningProjects = projects.filter(p => {
+        const dl = projectDeadlineStatus(p);
+        return dl.status === 'warning';
+      }).length;
+      const totalBudget = projects.reduce((sum, p) => sum + (Number(p.budget) || 0), 0);
+      const totalSpent = projects.reduce((sum, p) => sum + (Number(p.spent) || 0), 0);
+      const totalCommitted = projects.reduce((sum, p) => sum + (Number(p.committed) || 0), 0);
+      const totalAvailable = totalBudget - totalSpent - totalCommitted;
+      const financialDeviation = projects.filter(p => {
+        const fin = projectFinancials(p);
+        const phys = projectProgress(p);
+        return fin.spentPct > phys + 15 || fin.spentPct > 100;
+      }).length;
+
+      $('dashboard-stats').innerHTML = `
+        <div class="glass-card stat-card"><div class="icon"><i class="fas fa-folder"></i></div><div class="value">${total}</div><div class="label">Projetos</div></div>
+        <div class="glass-card stat-card"><div class="icon"><i class="fas fa-spinner"></i></div><div class="value">${inProgress}</div><div class="label">Em andamento</div></div>
+        <div class="glass-card stat-card"><div class="icon"><i class="fas fa-check-circle"></i></div><div class="value">${completed}</div><div class="label">Concluídos</div></div>
+        <div class="glass-card stat-card"><div class="icon"><i class="fas fa-clock"></i></div><div class="value">${overdueProjects}</div><div class="label">Atrasados</div></div>
+        <div class="glass-card stat-card"><div class="icon"><i class="fas fa-hourglass-half"></i></div><div class="value">${warningProjects}</div><div class="label">Prazo curto</div></div>
+        <div class="glass-card stat-card"><div class="icon"><i class="fas fa-wallet"></i></div><div class="value">${currencyBRL(totalBudget)}</div><div class="label">Orçamento total</div></div>
+        <div class="glass-card stat-card"><div class="icon"><i class="fas fa-money-bill-wave"></i></div><div class="value">${currencyBRL(totalSpent)}</div><div class="label">Total gasto</div></div>
+        <div class="glass-card stat-card"><div class="icon"><i class="fas fa-piggy-bank"></i></div><div class="value">${currencyBRL(totalAvailable)}</div><div class="label">Disponível geral</div></div>
+        <div class="glass-card stat-card"><div class="icon"><i class="fas fa-chart-line"></i></div><div class="value">${financialDeviation}</div><div class="label">Desvios financeiros</div></div>
+        <div class="glass-card stat-card"><div class="icon"><i class="fas fa-exclamation-circle"></i></div><div class="value">${atRisk}</div><div class="label">Riscos altos</div></div>
+      `;
+
+      const container = $('dashboard-projects');
+      if (!projects.length) {
+        container.innerHTML = emptyState('Nenhum projeto ainda', 'Clique em "+ Novo Projeto" para começar.', 'fa-rocket');
+        return;
+      }
+      container.innerHTML = projects.map(p => projectCardHTML(p)).join('');
+      container.querySelectorAll('.project-card').forEach(card => {
+        card.addEventListener('click', () => {
+          currentProjectId = card.dataset.id;
+          switchView('project-detail');
+        });
+      });
+    }
+
+    function renderProjectsList() {
+      const container = $('projects-list');
+      if (!projects.length) {
+        container.innerHTML = emptyState('Nenhum projeto cadastrado', 'Crie seu primeiro projeto e organize seu trabalho.', 'fa-folder-open');
+        return;
+      }
+      container.innerHTML = projects.map(p => projectCardHTML(p)).join('');
+      container.querySelectorAll('.project-card').forEach(card => {
+        card.addEventListener('click', () => {
+          currentProjectId = card.dataset.id;
+          switchView('project-detail');
+        });
+      });
+    }
+
+    function projectCardHTML(p) {
+      const progress = projectProgress(p);
+      const planned = plannedProgress(p);
+      const fin = projectFinancials(p);
+      const deadline = projectDeadlineStatus(p);
+      const health = projectHealth(p);
+      const riskCount = (p.risks || []).length;
+      const overdueCount = (p.phases || []).flatMap(f => f.tasks || []).filter(t => t.status !== 'completed' && isOverdue(t.dueDate)).length;
+      const financialClass = fin.spentPct > 100 ? 'financial-danger' : fin.spentPct > progress + 15 ? 'financial-warning' : 'financial-ok';
+      const deadlineIcon = deadline.status === 'danger' ? 'fa-calendar-times' : deadline.status === 'warning' ? 'fa-clock' : 'fa-calendar-check';
+      return `
+        <div class="glass-card project-card" data-id="${p.id}">
+          <div class="project-card-actions">
+            <button class="btn btn-icon btn-secondary" title="Editar projeto" onclick="event.stopPropagation(); quickEditProject('${p.id}')"><i class="fas fa-edit"></i></button>
+          </div>
+          <div class="project-card-header">
+            <div>
+              <div class="project-card-title">${escapeHtml(p.name)}</div>
+              <div class="project-card-meta">${typeLabel(p.type)} • ${formatDate(p.startDate)} - ${formatDate(p.endDate)}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="badge ${statusClasses[p.status] || 'bg-gray'}">${statusLabels[p.status] || p.status}</span>
+              <span class="badge ${health.class}">${health.label}</span>
+            </div>
+          </div>
+          <p class="text-muted" style="font-size:0.85rem;line-height:1.4;">${escapeHtml(p.description || '')}</p>
+          <div style="margin:10px 0;">
+            <div class="compare-bar-group">
+              <div class="compare-bar-row">
+                <span class="compare-bar-label">Físico</span>
+                <div class="compare-bar-track"><div class="compare-bar-fill progress-fill-green" style="width:${progress}%"></div></div>
+                <span class="compare-bar-value">${progress}%</span>
+              </div>
+              <div class="compare-bar-row">
+                <span class="compare-bar-label">Planejado</span>
+                <div class="compare-bar-track"><div class="compare-bar-fill progress-fill-blue" style="width:${planned}%"></div></div>
+                <span class="compare-bar-value">${planned}%</span>
+              </div>
+              <div class="compare-bar-row">
+                <span class="compare-bar-label">Financeiro</span>
+                <div class="compare-bar-track"><div class="compare-bar-fill ${financialClass === 'financial-danger' ? 'progress-fill-red' : financialClass === 'financial-warning' ? '' : 'progress-fill'}" style="width:${Math.min(fin.spentPct, 100)}%;background:${financialClass === 'financial-warning' ? 'linear-gradient(90deg, var(--orange), var(--yellow))' : ''}"></div></div>
+                <span class="compare-bar-value ${financialClass}">${fin.spentPct.toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
+          <div class="project-card-footer text-muted" style="font-size:0.8rem;">
+            <span><i class="fas fa-tasks text-gold"></i> ${(p.phases || []).flatMap(f => f.tasks || []).length} tarefas</span>
+            <span><i class="fas fa-exclamation-triangle text-gold"></i> ${riskCount} riscos</span>
+            <span class="${deadline.class}"><i class="fas ${deadlineIcon}"></i> ${deadline.label}</span>
+            ${overdueCount ? `<span class="deadline-danger"><i class="fas fa-clock"></i> ${overdueCount} atrasada(s)</span>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function quickEditProject(id) {
+      currentProjectId = id;
+      openProjectModal(getProject(id));
+    }
+
+    function renderProjectDetail() {
+      if (!currentProjectId) return;
+      const p = getProject(currentProjectId);
+      if (!p) { currentProjectId = null; switchView('dashboard'); return; }
+
+      $('pd-title').textContent = p.name;
+      $('pd-meta').textContent = `${p.manager || 'Sem responsável'} • ${formatDate(p.startDate)} - ${formatDate(p.endDate)}`;
+      $('pd-status').className = `badge ${statusClasses[p.status] || 'bg-gray'}`;
+      $('pd-status').textContent = statusLabels[p.status] || p.status;
+      $('pd-type').textContent = typeLabel(p.type);
+      const progress = projectProgress(p);
+      const planned = plannedProgress(p);
+      const deadline = projectDeadlineStatus(p);
+      const health = projectHealth(p);
+      $('pd-progress').textContent = `${progress}% físico`;
+      $('pd-progress-bar').style.width = `${progress}%`;
+      $('pd-deadline').className = `badge ${deadline.status === 'danger' ? 'bg-red' : deadline.status === 'warning' ? 'bg-yellow' : 'bg-green'}`;
+      $('pd-deadline').textContent = deadline.label;
+      $('pd-health').className = `badge ${health.class}`;
+      $('pd-health').textContent = health.label;
+
+      renderFinancialSummary(p, progress, planned);
+
+      renderOverview(p);
+      renderScope(p);
+      renderOutOfScope(p);
+      renderPhases(p);
+      renderSchedule(p);
+      renderRisks(p);
+      renderLessons(p);
+      renderIssues(p);
+      renderStakeholders(p);
+      renderNotes(p);
+      renderHistory(p);
+    }
+
+    function renderOverview(p) {
+      $('overview-objective').textContent = p.objective || 'Não definido';
+      $('overview-criteria').textContent = p.successCriteria || 'Não definido';
+      $('overview-assumptions').textContent = p.assumptions || 'Não definido';
+      $('overview-constraints').textContent = p.constraints || 'Não definido';
+      const delivContainer = $('overview-deliverables');
+      if (!p.deliverables || !p.deliverables.length) {
+        delivContainer.innerHTML = emptyStateSmall('Nenhuma entrega cadastrada', 'Adicione entregas na aba Escopo.');
+      } else {
+        delivContainer.innerHTML = p.deliverables.map(d => `<div class="list-item"><div><div class="list-item-title">${escapeHtml(d.name)}</div></div><span class="badge ${d.completed ? 'bg-green' : 'bg-gray'}">${d.completed ? 'Entregue' : 'Pendente'}</span></div>`).join('');
+      }
+    }
+
+    function renderFinancialSummary(p, progress, planned) {
+      const fin = projectFinancials(p);
+      const deadline = projectDeadlineStatus(p);
+      const container = $('financial-summary');
+      container.innerHTML = `
+        <div class="glass-card stat-card" style="padding:14px;"><div class="label">Orçamento total</div><div class="value" style="font-size:1.4rem;">${currencyBRL(fin.budget)}</div></div>
+        <div class="glass-card stat-card" style="padding:14px;"><div class="label">Gasto</div><div class="value ${fin.spentPct > 100 ? 'financial-danger' : fin.spentPct > progress + 15 ? 'financial-warning' : 'financial-ok'}" style="font-size:1.4rem;">${currencyBRL(fin.spent)} (${fin.spentPct.toFixed(1)}%)</div></div>
+        <div class="glass-card stat-card" style="padding:14px;"><div class="label">Comprometido</div><div class="value" style="font-size:1.4rem;">${currencyBRL(fin.committed)} (${fin.committedPct.toFixed(1)}%)</div></div>
+        <div class="glass-card stat-card" style="padding:14px;"><div class="label">Disponível</div><div class="value ${fin.available < 0 ? 'financial-danger' : 'financial-ok'}" style="font-size:1.4rem;">${currencyBRL(fin.available)} (${fin.availablePct.toFixed(1)}%)</div></div>
+      `;
+
+      const bars = $('performance-bars');
+      const financialClass = fin.spentPct > 100 ? 'progress-fill-red' : fin.spentPct > progress + 15 ? '' : 'progress-fill';
+      bars.innerHTML = `
+        <div class="compare-bar-row">
+          <span class="compare-bar-label">Físico executado</span>
+          <div class="compare-bar-track"><div class="compare-bar-fill progress-fill-green" style="width:${progress}%"></div></div>
+          <span class="compare-bar-value">${progress}%</span>
+        </div>
+        <div class="compare-bar-row">
+          <span class="compare-bar-label">Planejado até hoje</span>
+          <div class="compare-bar-track"><div class="compare-bar-fill progress-fill-blue" style="width:${planned}%"></div></div>
+          <span class="compare-bar-value">${planned}%</span>
+        </div>
+        <div class="compare-bar-row">
+          <span class="compare-bar-label">Financeiro executado</span>
+          <div class="compare-bar-track"><div class="compare-bar-fill ${financialClass}" style="width:${Math.min(fin.spentPct, 100)}%;${financialClass === '' ? 'background:linear-gradient(90deg, var(--orange), var(--yellow));' : ''}"></div></div>
+          <span class="compare-bar-value ${fin.spentPct > 100 ? 'financial-danger' : fin.spentPct > progress + 15 ? 'financial-warning' : 'financial-ok'}">${fin.spentPct.toFixed(1)}%</span>
+        </div>
+      `;
+
+      const alerts = $('financial-alerts');
+      let alertHtml = '';
+      if (fin.spentPct > 100) alertHtml += `<div class="badge bg-red" style="margin-right:8px;"><i class="fas fa-exclamation-circle"></i> Estouro orçamentário</div>`;
+      if (fin.spentPct > progress + 15) alertHtml += `<div class="badge bg-orange" style="margin-right:8px;"><i class="fas fa-chart-line"></i> Gasto acima do físico</div>`;
+      if (progress < planned - 10) alertHtml += `<div class="badge bg-yellow" style="margin-right:8px;"><i class="fas fa-clock"></i> Atraso físico</div>`;
+      if (deadline.status === 'danger') alertHtml += `<div class="badge bg-red" style="margin-right:8px;"><i class="fas fa-calendar-times"></i> Prazo vencido</div>`;
+      if (deadline.status === 'warning') alertHtml += `<div class="badge bg-yellow" style="margin-right:8px;"><i class="fas fa-hourglass-half"></i> ${deadline.label}</div>`;
+      alerts.innerHTML = alertHtml || `<div class="badge bg-green"><i class="fas fa-check-circle"></i> Projeto dentro dos parâmetros</div>`;
+    }
+
+    function renderScope(p) {
+      $('scope-objective').value = p.objective || '';
+      $('scope-criteria').value = p.successCriteria || '';
+      $('scope-assumptions').value = p.assumptions || '';
+      $('scope-constraints').value = p.constraints || '';
+      const list = $('scope-deliverables-list');
+      if (!p.deliverables || !p.deliverables.length) {
+        list.innerHTML = emptyStateSmall('Nenhuma entrega cadastrada', 'Use o botão ao lado para adicionar.');
+      } else {
+        list.innerHTML = p.deliverables.map((d, i) => `
+          <div class="list-item">
+            <div class="list-item-content">
+              <div class="list-item-title">${escapeHtml(d.name)}</div>
+            </div>
+            <div class="list-item-actions">
+              <button class="btn btn-icon btn-secondary" onclick="toggleDeliverable('${d.id}')" title="Marcar entregue"><i class="fas ${d.completed ? 'fa-undo' : 'fa-check'}"></i></button>
+              <button class="btn btn-icon btn-danger" onclick="deleteDeliverable('${d.id}')" title="Excluir"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderOutOfScope(p) {
+      const list = $('outofscope-list');
+      if (!p.outOfScopeItems || !p.outOfScopeItems.length) {
+        list.innerHTML = emptyStateSmall('Nenhum item fora do escopo', 'Registre o que não será feito no projeto.');
+      } else {
+        list.innerHTML = p.outOfScopeItems.map(item => `
+          <div class="list-item">
+            <div class="list-item-content"><div class="list-item-title">${escapeHtml(item.name)}</div>${item.reason ? `<div class="list-item-meta">${escapeHtml(item.reason)}</div>` : ''}</div>
+            <div class="list-item-actions">
+              <button class="btn btn-icon btn-secondary" onclick="editOutOfScope('${item.id}')"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-icon btn-danger" onclick="deleteOutOfScope('${item.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderPhases(p) {
+      const container = $('phases-list');
+      if (!p.phases || !p.phases.length) {
+        container.innerHTML = emptyStateSmall('Nenhuma fase criada', 'Crie fases como Iniciação, Planejamento, Execução...');
+        return;
+      }
+      container.innerHTML = p.phases.map((phase, idx) => {
+        const tasks = phase.tasks || [];
+        const progress = tasks.length ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 0;
+        return `
+          <div class="glass-card" style="padding:16px;margin-bottom:16px;">
+            <div class="section-header" style="margin-bottom:12px;">
+              <div>
+                <h4 class="section-title" style="font-size:1.1rem;">${idx + 1}. ${escapeHtml(phase.name)}</h4>
+                <div class="text-muted" style="font-size:0.8rem;">${tasks.length} tarefa(s)</div>
+              </div>
+              <div class="flex gap-2">
+                <button class="btn btn-primary btn-sm" onclick="openTaskModal('${phase.id}')"><i class="fas fa-plus"></i> Tarefa</button>
+                <button class="btn btn-icon btn-secondary" onclick="editPhase('${phase.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-icon btn-danger" onclick="deletePhase('${phase.id}')"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+            <div class="list mt-4">
+              ${tasks.length ? tasks.map(t => `
+                <div class="list-item">
+                  <div class="list-item-content">
+                    <div class="list-item-title">${escapeHtml(t.name)} <span class="badge ${priorityClasses[t.priority] || 'bg-gray'}">${getLabel(priorityLabels, 'taskPriority', t.priority, t.priority)}</span></div>
+                    <div class="list-item-meta">Responsável: ${escapeHtml(t.responsible || '-')} • Prazo: ${formatDate(t.dueDate)} <span class="${taskDeadlineStatus(t).class}">${taskDeadlineStatus(t).label}</span></div>
+                  </div>
+                  <div class="list-item-actions">
+                    <select class="form-select" style="width:auto;" onchange="updateTaskStatus('${phase.id}', '${t.id}', this.value)">
+                      <option value="pending" ${t.status === 'pending' ? 'selected' : ''}>Pendente</option>
+                      <option value="in-progress" ${t.status === 'in-progress' ? 'selected' : ''}>Em andamento</option>
+                      <option value="completed" ${t.status === 'completed' ? 'selected' : ''}>Concluída</option>
+                    </select>
+                    <button class="btn btn-icon btn-secondary" onclick="editTask('${phase.id}', '${t.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-icon btn-danger" onclick="deleteTask('${phase.id}', '${t.id}')"><i class="fas fa-trash"></i></button>
+                  </div>
+                </div>
+              `).join('') : emptyStateSmall('Nenhuma tarefa nesta fase', 'Adicione tarefas para acompanhar o progresso.')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSchedule(p) {
+      const statusFilter = $('filter-schedule-status').value;
+      const priorityFilter = $('filter-schedule-priority').value;
+      let tasks = (p.phases || []).flatMap(phase => (phase.tasks || []).map(t => ({ ...t, phaseName: phase.name, phaseId: phase.id })));
+      if (statusFilter) tasks = tasks.filter(t => t.status === statusFilter);
+      if (priorityFilter) tasks = tasks.filter(t => t.priority === priorityFilter);
+      tasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+      const container = $('schedule-list');
+      if (!tasks.length) {
+        container.innerHTML = emptyStateSmall('Nenhuma tarefa encontrada', 'Ajuste os filtros ou adicione tarefas nas fases.');
+        return;
+      }
+      container.innerHTML = tasks.map(t => {
+        const dl = taskDeadlineStatus(t);
+        return `
+        <div class="list-item">
+          <div class="list-item-content">
+            <div class="list-item-title">${escapeHtml(t.name)} <span class="badge ${statusClasses[t.status] || 'bg-gray'}">${statusLabels[t.status] || t.status}</span> <span class="badge ${dl.class === 'deadline-danger' ? 'bg-red' : dl.class === 'deadline-warning' ? 'bg-yellow' : 'bg-green'}">${dl.label}</span></div>
+            <div class="list-item-meta">Fase: ${escapeHtml(t.phaseName)} • Responsável: ${escapeHtml(t.responsible || '-')} • Prazo: ${formatDate(t.dueDate)}</div>
+          </div>
+        </div>
+      `}).join('');
+    }
+
+    function renderRisks(p) {
+      const list = $('risks-list');
+      if (!p.risks || !p.risks.length) {
+        list.innerHTML = emptyStateSmall('Nenhum risco registrado', 'Antecipe problemas e registre planos de mitigação.');
+      } else {
+        list.innerHTML = p.risks.map(r => {
+          const rl = riskLevel(r.probability, r.impact);
+          return `
+            <div class="list-item" style="border-left:4px solid var(--${rl.class.replace('bg-','') === 'green' ? 'green' : rl.class.replace('bg-','') === 'yellow' ? 'yellow' : rl.class.replace('bg-','') === 'orange' ? 'orange' : 'red'})">
+              <div class="list-item-content">
+                <div class="list-item-title">${escapeHtml(r.description)} <span class="badge ${rl.class}">${rl.level}</span></div>
+                <div class="list-item-meta">Prob: ${r.probability} • Impacto: ${r.impact} • Mitigação: ${escapeHtml(r.mitigation || '-')}</div>
+              </div>
+              <div class="list-item-actions">
+                <button class="btn btn-icon btn-secondary" onclick="editRisk('${r.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-icon btn-danger" onclick="deleteRisk('${r.id}')"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderLessons(p) {
+      const list = $('lessons-list');
+      const catClasses = { success: 'bg-green', problem: 'bg-red', opportunity: 'bg-blue' };
+      if (!p.lessons || !p.lessons.length) {
+        list.innerHTML = emptyStateSmall('Nenhuma lição aprendida', 'Registre aprendizados para projetos futuros.');
+      } else {
+        list.innerHTML = p.lessons.map(l => `
+          <div class="list-item">
+            <div class="list-item-content">
+              <div class="list-item-title">${escapeHtml(l.title)} <span class="badge ${catClasses[l.category] || 'bg-gray'}">${getLabel({}, 'lessonCategory', l.category, l.category)}</span></div>
+              <div class="list-item-meta">${escapeHtml(l.whatHappened || '')}</div>
+            </div>
+            <div class="list-item-actions">
+              <button class="btn btn-icon btn-secondary" onclick="editLesson('${l.id}')"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-icon btn-danger" onclick="deleteLesson('${l.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderIssues(p) {
+      const list = $('issues-list');
+      const sevClasses = { low: 'bg-green', medium: 'bg-yellow', high: 'bg-red' };
+      if (!p.issues || !p.issues.length) {
+        list.innerHTML = emptyStateSmall('Nenhum problema registrado', 'Acompanhe issues e seus impactos.');
+      } else {
+        list.innerHTML = p.issues.map(i => `
+          <div class="list-item">
+            <div class="list-item-content">
+              <div class="list-item-title">${escapeHtml(i.title)} <span class="badge ${sevClasses[i.severity] || 'bg-gray'}">${getLabel({}, 'issueSeverity', i.severity, i.severity)}</span></div>
+              <div class="list-item-meta">${escapeHtml(i.description || '')} • ${formatDate(i.date)}</div>
+            </div>
+            <div class="list-item-actions">
+              <button class="btn btn-icon btn-secondary" onclick="editIssue('${i.id}')"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-icon btn-danger" onclick="deleteIssue('${i.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderStakeholders(p) {
+      const list = $('stakeholders-list');
+      const infClasses = { low: 'bg-green', medium: 'bg-yellow', high: 'bg-red' };
+      if (!p.stakeholders || !p.stakeholders.length) {
+        list.innerHTML = emptyStateSmall('Nenhum stakeholder cadastrado', 'Mapeie quem influencia o projeto.');
+      } else {
+        list.innerHTML = p.stakeholders.map(s => `
+          <div class="list-item">
+            <div class="list-item-content">
+              <div class="list-item-title">${escapeHtml(s.name)} <span class="badge ${infClasses[s.influence] || 'bg-gray'}">${getLabel({}, 'stakeholderInfluence', s.influence, s.influence)}</span></div>
+              <div class="list-item-meta">${escapeHtml(s.role || '')}</div>
+            </div>
+            <div class="list-item-actions">
+              <button class="btn btn-icon btn-secondary" onclick="editStakeholder('${s.id}')"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-icon btn-danger" onclick="deleteStakeholder('${s.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderNotes(p) {
+      const list = $('notes-list');
+      if (!p.notes || !p.notes.length) {
+        list.innerHTML = emptyStateSmall('Nenhuma observação', 'Anotações livres sobre o projeto.');
+      } else {
+        list.innerHTML = p.notes.map(n => `
+          <div class="list-item">
+            <div class="list-item-content">
+              <div class="list-item-title">${formatDate(n.date)}</div>
+              <div class="list-item-meta">${escapeHtml(n.content)}</div>
+            </div>
+            <div class="list-item-actions">
+              <button class="btn btn-icon btn-secondary" onclick="editNote('${n.id}')"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-icon btn-danger" onclick="deleteNote('${n.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderHistory(p) {
+      const list = $('history-list');
+      if (!p.history || !p.history.length) {
+        list.innerHTML = emptyStateSmall('Sem alterações', 'O histórico aparece aqui automaticamente.');
+      } else {
+        list.innerHTML = p.history.map(h => `
+          <div class="list-item">
+            <div class="list-item-content">
+              <div class="list-item-title">${escapeHtml(h.action)}</div>
+              <div class="list-item-meta">${new Date(h.date).toLocaleString('pt-BR')}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function emptyState(title, subtitle, icon) {
+      return `<div class="empty-state" style="grid-column:1/-1;"><i class="fas ${icon}"></i><h3>${title}</h3><p>${subtitle}</p></div>`;
+    }
+    function emptyStateSmall(title, subtitle) {
+      return `<div class="empty-state" style="padding:24px;"><i class="fas fa-info-circle"></i><h3>${title}</h3><p>${subtitle}</p></div>`;
+    }
+
+    function getMergedOptions(type, defaults) {
+      const customs = customOptions[type] || [];
+      return [...defaults, ...customs];
+    }
+
+    function buildSelectOptions(type, defaults, selectedValue) {
+      const options = getMergedOptions(type, defaults);
+      let html = options.map(o => `<option value="${escapeHtml(o.value)}" ${selectedValue === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('');
+      html += `<option value="__custom__">+ Cadastrar novo...</option>`;
+      return html;
+    }
+
+    function getLabel(map, customType, value, defaultLabel = value) {
+      if (map[value]) return map[value];
+      const custom = (customOptions[customType] || []).find(o => o.value === value);
+      return custom ? custom.label : (defaultLabel || value || '-');
+    }
+
+    function typeLabel(value) {
+      return getMergedOptions('projectType', defaultTypeOptions).find(o => o.value === value)?.label || value || 'Outro';
+    }
+
+    // ===== NAVIGATION =====
+    function switchView(view) {
+      currentView = view;
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+      ['dashboard-view', 'projects-view', 'project-detail-view'].forEach(id => $(id).classList.toggle('hidden', id !== `${view}-view`));
+      const titles = { dashboard: 'Dashboard', projects: 'Projetos', 'project-detail': 'Detalhes do Projeto' };
+      $('page-title').textContent = titles[view] || 'ProjectMaster';
+      if (view === 'project-detail' && !currentProjectId) switchView('dashboard');
+      if (view === 'project-detail') renderProjectDetail();
+      if (window.innerWidth <= 768) $('sidebar').classList.add('collapsed');
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('#project-tabs .tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.toggle('hidden', el.id !== `tab-${tab}`));
+      if (tab === 'schedule' || tab === 'report') renderProjectDetail();
+    }
+
+    // ===== MODAL SYSTEM =====
+    function openModal(title, bodyHTML, footerHTML) {
+      $('modal-title').textContent = title;
+      $('modal-body').innerHTML = bodyHTML;
+      $('modal-footer').innerHTML = footerHTML;
+      $('modal-overlay').classList.add('show');
+    }
+    function closeModal() { $('modal-overlay').classList.remove('show'); }
+    $('modal-close').addEventListener('click', closeModal);
+    $('modal-overlay').addEventListener('click', e => { if (e.target === $('modal-overlay')) closeModal(); });
+
+    // ===== TOASTS =====
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-info-circle';
+      toast.innerHTML = `<i class="fas ${icon} text-gold"></i><span>${message}</span>`;
+      $('toast-container').appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ===== CONFIRM =====
+    function confirmAction(message, onConfirm) {
+      openModal('Confirmação', `<p>${message}</p>`, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-danger" id="btn-confirm-action">Confirmar</button>
+      `);
+      $('btn-confirm-action').addEventListener('click', () => { closeModal(); onConfirm(); });
+    }
+
+    // ===== PROJECT CRUD MODALS =====
+    function openCustomOptionModal(type, defaults, selectId, callbackAfterAdd) {
+      openModal('Cadastrar Nova Opção', `
+        <p class="modal-subtitle">O tipo desejado não está na lista? Cadastre um novo para usar nos seus projetos.</p>
+        <div class="form-group full">
+          <label class="form-label">Nome da nova opção *</label>
+          <input class="form-input" id="custom-option-label" placeholder="Ex: Sustentabilidade, Logística, Pessoal...">
+        </div>
+      `, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-custom-option">Cadastrar</button>
+      `);
+      $('btn-save-custom-option').addEventListener('click', () => {
+        const label = $('custom-option-label').value.trim();
+        if (!label) { showToast('Informe o nome da nova opção', 'error'); return; }
+        const value = 'custom_' + uuid();
+        if (!customOptions[type]) customOptions[type] = [];
+        customOptions[type].push({ value, label });
+        saveCustomOptions();
+        showToast('Nova opção cadastrada', 'success');
+        if (selectId && $(selectId)) {
+          $(selectId).innerHTML = buildSelectOptions(type, defaults, value);
+        }
+        closeModal();
+        if (callbackAfterAdd) callbackAfterAdd(value);
+      });
+    }
+
+    function openProjectModal(project = null) {
+      const isEdit = !!project;
+      const typeSelectId = 'p-type';
+      const html = `
+        <div class="form-grid">
+          <div class="form-group full"><label class="form-label">Nome do Projeto *</label><input class="form-input" id="p-name" value="${escapeHtml(project?.name || '')}"></div>
+          <div class="form-group full"><label class="form-label">Descrição</label><textarea class="form-textarea" id="p-description">${escapeHtml(project?.description || '')}</textarea></div>
+          <div class="form-group"><label class="form-label">Data de Início *</label><input type="date" class="form-input" id="p-start" value="${project?.startDate || ''}"></div>
+          <div class="form-group"><label class="form-label">Data de Término Prevista *</label><input type="date" class="form-input" id="p-end" value="${project?.endDate || ''}"></div>
+          <div class="form-group"><label class="form-label">Responsável</label><input class="form-input" id="p-manager" value="${escapeHtml(project?.manager || '')}"></div>
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="${typeSelectId}">${buildSelectOptions('projectType', defaultTypeOptions, project?.type)}</select>
+            <p class="form-hint">Selecione a área do projeto. Se não encontrar, escolha &quot;Cadastrar novo...&quot;.</p>
+          </div>
+          <div class="form-group full" style="grid-column:1/-1;">
+            <h4 style="color:var(--gold);font-size:0.95rem;margin:8px 0 12px;"><i class="fas fa-wallet"></i> Controle Financeiro</h4>
+            <p class="modal-subtitle">Informe os valores financeiros para acompanhar o planejado × executado. Deixe zerado se não for usar.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Orçamento total disponível (R$)</label>
+            <input type="number" step="0.01" min="0" class="form-input" id="p-budget" value="${project?.budget || ''}" placeholder="0,00">
+            <p class="form-hint">Valor total aprovado para o projeto.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valor já gasto (R$)</label>
+            <input type="number" step="0.01" min="0" class="form-input" id="p-spent" value="${project?.spent || ''}" placeholder="0,00">
+            <p class="form-hint">Valor efetivamente pago/despendido até hoje.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valor comprometido (R$)</label>
+            <input type="number" step="0.01" min="0" class="form-input" id="p-committed" value="${project?.committed || ''}" placeholder="0,00">
+            <p class="form-hint">Valores empenhados/contratados, mas ainda não pagos.</p>
+          </div>
+          <div class="form-group full"><label class="form-label">Status</label><select class="form-select" id="p-status">${Object.entries(statusLabels).map(([k, v]) => `<option value="${k}" ${project?.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+        </div>
+      `;
+      openModal(isEdit ? 'Editar Projeto' : 'Novo Projeto', html, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-project">${isEdit ? 'Salvar' : 'Criar Projeto'}</button>
+      `);
+      $(typeSelectId).addEventListener('change', e => {
+        if (e.target.value === '__custom__') {
+          e.target.value = project?.type || '';
+          openCustomOptionModal('projectType', defaultTypeOptions, typeSelectId);
+        }
+      });
+      $('btn-save-project').addEventListener('click', () => {
+        const name = $('p-name').value.trim();
+        const start = $('p-start').value;
+        const end = $('p-end').value;
+        if (!name || !start || !end) { showToast('Preencha os campos obrigatórios', 'error'); return; }
+        const data = {
+          name, description: $('p-description').value.trim(), startDate: start, endDate: end,
+          manager: $('p-manager').value.trim(), type: $('p-type').value, status: $('p-status').value,
+          budget: Number($('p-budget').value) || 0,
+          spent: Number($('p-spent').value) || 0,
+          committed: Number($('p-committed').value) || 0
+        };
+        if (isEdit) {
+          updateProject(project.id, data);
+          showToast('Projeto atualizado', 'success');
+        } else {
+          const newProject = {
+            id: uuid(), ...data,
+            objective: '', successCriteria: '', assumptions: '', constraints: '',
+            deliverables: [], outOfScopeItems: [], phases: [], risks: [], lessons: [],
+            issues: [], stakeholders: [], notes: [], history: [],
+            budget: 0, spent: 0, committed: 0,
+            createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+          };
+          createProject(newProject);
+          currentProjectId = newProject.id;
+          showToast('Projeto criado com sucesso', 'success');
+        }
+        closeModal();
+        switchView('project-detail');
+        render();
+      });
+    }
+
+    // ===== SCOPE ACTIONS =====
+    function saveScope() {
+      const p = getProject(currentProjectId);
+      p.objective = $('scope-objective').value.trim();
+      p.successCriteria = $('scope-criteria').value.trim();
+      p.assumptions = $('scope-assumptions').value.trim();
+      p.constraints = $('scope-constraints').value.trim();
+      saveData();
+      addHistory(currentProjectId, 'Escopo atualizado');
+      renderProjectDetail();
+      showToast('Escopo salvo', 'success');
+    }
+
+    function addDeliverable() {
+      openModal('Nova Entrega', `<div class="form-group"><label class="form-label">Nome da entrega</label><input class="form-input" id="d-name"></div>`, `
+        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-deliverable">Adicionar</button>
+      `);
+      $('btn-save-deliverable').addEventListener('click', () => {
+        const name = $('d-name').value.trim();
+        if (!name) return;
+        const p = getProject(currentProjectId);
+        p.deliverables.push({ id: uuid(), name, completed: false });
+        saveData();
+        addHistory(currentProjectId, `Entrega adicionada: ${name}`);
+        closeModal();
+        renderProjectDetail();
+        showToast('Entrega adicionada', 'success');
+      });
+    }
+
+    function toggleDeliverable(id) {
+      const p = getProject(currentProjectId);
+      const d = p.deliverables.find(x => x.id === id);
+      if (d) { d.completed = !d.completed; saveData(); addHistory(currentProjectId, `Entrega ${d.completed ? 'concluída' : 'reaberta'}: ${d.name}`); renderProjectDetail(); }
+    }
+
+    function deleteDeliverable(id) {
+      const p = getProject(currentProjectId);
+      confirmAction('Excluir esta entrega?', () => {
+        p.deliverables = p.deliverables.filter(x => x.id !== id);
+        saveData();
+        addHistory(currentProjectId, 'Entrega removida');
+        renderProjectDetail();
+        showToast('Entrega excluída', 'success');
+      });
+    }
+
+    // ===== OUT OF SCOPE =====
+    function addOutOfScope() {
+      openModal('Item Fora do Escopo', `
+        <p class="modal-subtitle">Defina claramente o que será excluído do projeto e por quê. Isso protege o prazo e o orçamento.</p>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Item</label>
+            <input class="form-input" id="oos-name" placeholder="Ex: Reforma de áreas comuns do condomínio">
+            <p class="form-hint">Descreva o que não será feito neste projeto.</p>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Motivo / Justificativa</label>
+            <textarea class="form-textarea" id="oos-reason" placeholder="Ex: Fora do orçamento aprovado; será tratado em projeto futuro."></textarea>
+            <p class="form-hint">Explique por que o item foi excluído, evitando questionamentos depois.</p>
+          </div>
+        </div>
+      `, `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-oos">Adicionar</button>`);
+      $('btn-save-oos').addEventListener('click', () => {
+        const name = $('oos-name').value.trim();
+        if (!name) return;
+        const p = getProject(currentProjectId);
+        p.outOfScopeItems.push({ id: uuid(), name, reason: $('oos-reason').value.trim() });
+        saveData();
+        addHistory(currentProjectId, `Item fora do escopo adicionado: ${name}`);
+        closeModal(); renderProjectDetail(); showToast('Item registrado', 'success');
+      });
+    }
+
+    function editOutOfScope(id) {
+      const p = getProject(currentProjectId);
+      const item = p.outOfScopeItems.find(x => x.id === id);
+      openModal('Editar Item Fora do Escopo', `
+        <p class="modal-subtitle">Defina claramente o que será excluído do projeto e por quê. Isso protege o prazo e o orçamento.</p>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Item</label>
+            <input class="form-input" id="oos-name" value="${escapeHtml(item.name)}">
+            <p class="form-hint">Descreva o que não será feito neste projeto.</p>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Motivo / Justificativa</label>
+            <textarea class="form-textarea" id="oos-reason">${escapeHtml(item.reason || '')}</textarea>
+            <p class="form-hint">Explique por que o item foi excluído, evitando questionamentos depois.</p>
+          </div>
+        </div>
+      `, `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-oos">Salvar</button>`);
+      $('btn-save-oos').addEventListener('click', () => {
+        item.name = $('oos-name').value.trim();
+        item.reason = $('oos-reason').value.trim();
+        saveData();
+        addHistory(currentProjectId, 'Item fora do escopo atualizado');
+        closeModal(); renderProjectDetail(); showToast('Item atualizado', 'success');
+      });
+    }
+
+    function deleteOutOfScope(id) {
+      confirmAction('Excluir este item?', () => {
+        const p = getProject(currentProjectId);
+        p.outOfScopeItems = p.outOfScopeItems.filter(x => x.id !== id);
+        saveData();
+        addHistory(currentProjectId, 'Item fora do escopo removido');
+        renderProjectDetail(); showToast('Item excluído', 'success');
+      });
+    }
+
+    // ===== PHASES =====
+    function addPhase() {
+      openModal('Nova Fase', `
+        <p class="modal-subtitle">As fases dividem o projeto em etapas lógicas. Você pode usar: Iniciação, Planejamento, Execução, Monitoramento e Encerramento.</p>
+        <div class="form-group">
+          <label class="form-label">Nome da fase</label>
+          <input class="form-input" id="phase-name" placeholder="Ex: Planejamento">
+          <p class="form-hint">Escolha um nome que represente um grupo de tarefas relacionadas.</p>
+        </div>`,
+        `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-phase">Adicionar</button>`);
+      $('btn-save-phase').addEventListener('click', () => {
+        const name = $('phase-name').value.trim();
+        if (!name) return;
+        const p = getProject(currentProjectId);
+        p.phases.push({ id: uuid(), name, order: p.phases.length, tasks: [] });
+        saveData();
+        addHistory(currentProjectId, `Fase adicionada: ${name}`);
+        closeModal(); renderProjectDetail(); showToast('Fase criada', 'success');
+      });
+    }
+
+    function editPhase(id) {
+      const p = getProject(currentProjectId);
+      const phase = p.phases.find(f => f.id === id);
+      openModal('Editar Fase', `
+        <p class="modal-subtitle">As fases dividem o projeto em etapas lógicas. Você pode usar: Iniciação, Planejamento, Execução, Monitoramento e Encerramento.</p>
+        <div class="form-group">
+          <label class="form-label">Nome da fase</label>
+          <input class="form-input" id="phase-name" value="${escapeHtml(phase.name)}">
+          <p class="form-hint">Escolha um nome que represente um grupo de tarefas relacionadas.</p>
+        </div>`,
+        `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-phase">Salvar</button>`);
+      $('btn-save-phase').addEventListener('click', () => {
+        phase.name = $('phase-name').value.trim();
+        saveData();
+        addHistory(currentProjectId, 'Fase renomeada');
+        closeModal(); renderProjectDetail(); showToast('Fase atualizada', 'success');
+      });
+    }
+
+    function deletePhase(id) {
+      confirmAction('Excluir esta fase e todas as suas tarefas?', () => {
+        const p = getProject(currentProjectId);
+        p.phases = p.phases.filter(f => f.id !== id);
+        saveData();
+        addHistory(currentProjectId, 'Fase removida');
+        renderProjectDetail(); showToast('Fase excluída', 'success');
+      });
+    }
+
+    // ===== TASKS =====
+    const defaultTaskPriorities = [
+      { value: 'low', label: 'Baixa' },
+      { value: 'medium', label: 'Média' },
+      { value: 'high', label: 'Alta' }
+    ];
+
+    function taskForm(t = {}) {
+      const prioritySelectId = 't-priority';
+      return `
+        <p class="modal-subtitle">As tarefas são as ações concretas dentro de cada fase. Defina quem faz, até quando e qual a prioridade.</p>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Nome da tarefa *</label>
+            <input class="form-input" id="t-name" value="${escapeHtml(t.name || '')}" placeholder="Ex: Aprovar layout da página inicial">
+            <p class="form-hint">Use um verbo de ação e deixe claro o que deve ser entregue.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Responsável</label>
+            <input class="form-input" id="t-responsible" value="${escapeHtml(t.responsible || '')}" placeholder="Ex: Ana Silva">
+            <p class="form-hint">Quem é o dono desta tarefa?</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prazo</label>
+            <input type="date" class="form-input" id="t-due" value="${t.dueDate || ''}">
+            <p class="form-hint">Data limite para conclusão.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prioridade</label>
+            <select class="form-select" id="${prioritySelectId}">${buildSelectOptions('taskPriority', defaultTaskPriorities, t.priority)}</select>
+            <p class="form-hint">Alta: bloqueia outras atividades. Cadastre um novo nível se necessário.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="t-status">${Object.entries(statusLabels).filter(([k]) => ['not-started','in-progress','completed','pending'].includes(k) || true).map(([k, v]) => `<option value="${k}" ${t.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+            <p class="form-hint">Em qual etapa a tarefa está agora?</p>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Descrição</label>
+            <textarea class="form-textarea" id="t-desc" placeholder="Ex: Revisar protótipo, aprovar versão final e encaminhar para desenvolvimento.">${escapeHtml(t.description || '')}</textarea>
+            <p class="form-hint">Detalhes que ajudem o responsável a executar corretamente.</p>
+          </div>
+        </div>
+      `;
+      setTimeout(() => {
+        $(prioritySelectId).addEventListener('change', e => {
+          if (e.target.value === '__custom__') {
+            e.target.value = t.priority || '';
+            openCustomOptionModal('taskPriority', defaultTaskPriorities, prioritySelectId);
+          }
+        });
+      }, 0);
+      return html;
+    }
+
+    function openTaskModal(phaseId, task = null) {
+      const isEdit = !!task;
+      openModal(isEdit ? 'Editar Tarefa' : 'Nova Tarefa', taskForm(task),
+        `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-task">${isEdit ? 'Salvar' : 'Adicionar'}</button>`);
+      $('btn-save-task').addEventListener('click', () => {
+        const name = $('t-name').value.trim();
+        if (!name) { showToast('Nome obrigatório', 'error'); return; }
+        const data = {
+          name, responsible: $('t-responsible').value.trim(), dueDate: $('t-due').value,
+          priority: $('t-priority').value, status: $('t-status').value, description: $('t-desc').value.trim()
+        };
+        const p = getProject(currentProjectId);
+        const phase = p.phases.find(f => f.id === phaseId);
+        if (isEdit) {
+          const idx = phase.tasks.findIndex(x => x.id === task.id);
+          phase.tasks[idx] = { ...phase.tasks[idx], ...data };
+          addHistory(currentProjectId, `Tarefa atualizada: ${name}`);
+        } else {
+          phase.tasks.push({ id: uuid(), ...data });
+          addHistory(currentProjectId, `Tarefa adicionada: ${name}`);
+        }
+        saveData();
+        closeModal(); renderProjectDetail(); showToast(isEdit ? 'Tarefa atualizada' : 'Tarefa criada', 'success');
+      });
+    }
+
+    function editTask(phaseId, taskId) {
+      const p = getProject(currentProjectId);
+      const phase = p.phases.find(f => f.id === phaseId);
+      const task = phase.tasks.find(t => t.id === taskId);
+      openTaskModal(phaseId, task);
+    }
+
+    function deleteTask(phaseId, taskId) {
+      confirmAction('Excluir esta tarefa?', () => {
+        const p = getProject(currentProjectId);
+        const phase = p.phases.find(f => f.id === phaseId);
+        phase.tasks = phase.tasks.filter(t => t.id !== taskId);
+        saveData();
+        addHistory(currentProjectId, 'Tarefa removida');
+        renderProjectDetail(); showToast('Tarefa excluída', 'success');
+      });
+    }
+
+    function updateTaskStatus(phaseId, taskId, status) {
+      const p = getProject(currentProjectId);
+      const phase = p.phases.find(f => f.id === phaseId);
+      const task = phase.tasks.find(t => t.id === taskId);
+      task.status = status;
+      saveData();
+      addHistory(currentProjectId, `Status da tarefa alterado para ${statusLabels[status]}: ${task.name}`);
+      renderProjectDetail();
+    }
+
+    // ===== RISKS =====
+    function riskForm(r = {}) {
+      const opts = [['low','Baixa'],['medium','Média'],['high','Alta']];
+      return `
+        <p class="modal-subtitle">Antecipe problemas que podem atrasar, onerar ou comprometer o projeto. Quanto mais cedo identificados, mais fáceis de contornar.</p>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Descrição do risco *</label>
+            <textarea class="form-textarea" id="r-desc" placeholder="Ex: Atraso na entrega de material por parte do fornecedor principal.">${escapeHtml(r.description || '')}</textarea>
+            <p class="form-hint">Descreva o evento negativo que pode acontecer. Seja objetivo.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Probabilidade</label>
+            <select class="form-select" id="r-prob">${opts.map(([k, v]) => `<option value="${k}" ${r.probability === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+            <p class="form-hint">Quão provável é esse risco se tornar realidade?</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Impacto</label>
+            <select class="form-select" id="r-impact">${opts.map(([k, v]) => `<option value="${k}" ${r.impact === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+            <p class="form-hint">Se acontecer, qual o prejuízo para prazo, custo ou qualidade?</p>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Plano de Mitigação</label>
+            <textarea class="form-textarea" id="r-mitigation" placeholder="Ex: Fechar contrato com fornecedor secundário; manter estoque de segurança.">${escapeHtml(r.mitigation || '')}</textarea>
+            <p class="form-hint">O que será feito para reduzir a probabilidade ou o impacto deste risco?</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function addRisk() {
+      openModal('Novo Risco', riskForm(), `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-risk">Adicionar</button>`);
+      $('btn-save-risk').addEventListener('click', () => {
+        const desc = $('r-desc').value.trim();
+        if (!desc) { showToast('Descrição obrigatória', 'error'); return; }
+        const p = getProject(currentProjectId);
+        p.risks.push({ id: uuid(), description: desc, probability: $('r-prob').value, impact: $('r-impact').value, mitigation: $('r-mitigation').value.trim() });
+        saveData();
+        addHistory(currentProjectId, `Risco registrado: ${desc}`);
+        closeModal(); renderProjectDetail(); showToast('Risco adicionado', 'success');
+      });
+    }
+
+    function editRisk(id) {
+      const p = getProject(currentProjectId);
+      const r = p.risks.find(x => x.id === id);
+      openModal('Editar Risco', riskForm(r), `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-risk">Salvar</button>`);
+      $('btn-save-risk').addEventListener('click', () => {
+        r.description = $('r-desc').value.trim();
+        r.probability = $('r-prob').value;
+        r.impact = $('r-impact').value;
+        r.mitigation = $('r-mitigation').value.trim();
+        saveData();
+        addHistory(currentProjectId, 'Risco atualizado');
+        closeModal(); renderProjectDetail(); showToast('Risco atualizado', 'success');
+      });
+    }
+
+    function deleteRisk(id) {
+      confirmAction('Excluir este risco?', () => {
+        const p = getProject(currentProjectId);
+        p.risks = p.risks.filter(x => x.id !== id);
+        saveData();
+        addHistory(currentProjectId, 'Risco removido');
+        renderProjectDetail(); showToast('Risco excluído', 'success');
+      });
+    }
+
+    // ===== LESSONS =====
+    const defaultLessonCategories = [
+      { value: 'success', label: 'Sucesso' },
+      { value: 'problem', label: 'Problema' },
+      { value: 'opportunity', label: 'Oportunidade' }
+    ];
+
+    function lessonForm(l = {}) {
+      const catSelectId = 'l-category';
+      return `
+        <p class="modal-subtitle">Lições aprendidas ajudam você (e sua equipe) a não repetir erros e a replicar acertos nos próximos projetos.</p>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Título *</label>
+            <input class="form-input" id="l-title" value="${escapeHtml(l.title || '')}" placeholder="Ex: Comunicação diária reduziu retrabalho">
+            <p class="form-hint">Um nome curto que resuma a lição.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Categoria</label>
+            <select class="form-select" id="${catSelectId}">${buildSelectOptions('lessonCategory', defaultLessonCategories, l.category)}</select>
+            <p class="form-hint">Era algo positivo, negativo ou uma oportunidade? Cadastre uma nova categoria se necessário.</p>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">O que aconteceu?</label>
+            <textarea class="form-textarea" id="l-happened" placeholder="Ex: As daily meetings de 10 minutos mantiveram todos alinhados e evitaram retrabalho na fase de execução.">${escapeHtml(l.whatHappened || '')}</textarea>
+            <p class="form-hint">Descreva o contexto e os fatos.</p>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">O que aprendemos?</label>
+            <textarea class="form-textarea" id="l-learned" placeholder="Ex: Reuniões curtas e diárias são mais eficientes do que reuniões longas e semanais.">${escapeHtml(l.whatWeLearned || '')}</textarea>
+            <p class="form-hint">Qual foi o aprendizado principal?</p>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Recomendação para o futuro</label>
+            <textarea class="form-textarea" id="l-recommendation" placeholder="Ex: Adotar daily meetings em todos os projetos com equipes acima de 3 pessoas.">${escapeHtml(l.recommendation || '')}</textarea>
+            <p class="form-hint">Como aplicar esse aprendizado da próxima vez?</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function addLesson() {
+      openModal('Nova Lição Aprendida', lessonForm(), `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-lesson">Adicionar</button>`);
+      $('btn-save-lesson').addEventListener('click', () => {
+        const title = $('l-title').value.trim();
+        if (!title) return;
+        const p = getProject(currentProjectId);
+        p.lessons.push({ id: uuid(), title, category: $('l-category').value, whatHappened: $('l-happened').value.trim(), whatWeLearned: $('l-learned').value.trim(), recommendation: $('l-recommendation').value.trim() });
+        saveData();
+        addHistory(currentProjectId, `Lição registrada: ${title}`);
+        closeModal(); renderProjectDetail(); showToast('Lição registrada', 'success');
+      });
+    }
+
+    function editLesson(id) {
+      const p = getProject(currentProjectId);
+      const l = p.lessons.find(x => x.id === id);
+      openModal('Editar Lição', lessonForm(l), `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-lesson">Salvar</button>`);
+      $('btn-save-lesson').addEventListener('click', () => {
+        l.title = $('l-title').value.trim(); l.category = $('l-category').value;
+        l.whatHappened = $('l-happened').value.trim(); l.whatWeLearned = $('l-learned').value.trim();
+        l.recommendation = $('l-recommendation').value.trim();
+        saveData();
+        addHistory(currentProjectId, 'Lição atualizada');
+        closeModal(); renderProjectDetail(); showToast('Lição atualizada', 'success');
+      });
+    }
+
+    function deleteLesson(id) {
+      confirmAction('Excluir esta lição?', () => {
+        const p = getProject(currentProjectId);
+        p.lessons = p.lessons.filter(x => x.id !== id);
+        saveData();
+        addHistory(currentProjectId, 'Lição removida');
+        renderProjectDetail(); showToast('Lição excluída', 'success');
+      });
+    }
+
+    // ===== ISSUES =====
+    const defaultIssueSeverities = [
+      { value: 'low', label: 'Baixa' },
+      { value: 'medium', label: 'Média' },
+      { value: 'high', label: 'Alta' }
+    ];
+
+    function issueForm(i = {}) {
+      const sevSelectId = 'i-severity';
+      return `
+        <p class="modal-subtitle">Um problema é algo que já aconteceu e precisa ser resolvido. Diferente de risco, o issue é uma realidade.</p>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Título *</label>
+            <input class="form-input" id="i-title" value="${escapeHtml(i.title || '')}" placeholder="Ex: Servidor fora do ar por 2 horas">
+            <p class="form-hint">Resuma o problema em uma frase curta.</p>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Descrição</label>
+            <textarea class="form-textarea" id="i-desc" placeholder="Ex: O ambiente de produção ficou indisponível das 14h às 16h por falha no provedor de nuvem.">${escapeHtml(i.description || '')}</textarea>
+            <p class="form-hint">Detalhe o que ocorreu, quem foi afetado e o impacto.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Severidade</label>
+            <select class="form-select" id="${sevSelectId}">${buildSelectOptions('issueSeverity', defaultIssueSeverities, i.severity)}</select>
+            <p class="form-hint">Quanto o problema prejudica o projeto? Cadastre um novo nível se necessário.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data</label>
+            <input type="date" class="form-input" id="i-date" value="${i.date || new Date().toISOString().split('T')[0]}">
+            <p class="form-hint">Quando o problema foi identificado?</p>
+          </div>
+        </div>
+      `;
+      setTimeout(() => {
+        $(sevSelectId).addEventListener('change', e => {
+          if (e.target.value === '__custom__') {
+            e.target.value = i.severity || '';
+            openCustomOptionModal('issueSeverity', defaultIssueSeverities, sevSelectId);
+          }
+        });
+      }, 0);
+      return html;
+    }
+
+    function addIssue() {
+      openModal('Novo Problema', issueForm(), `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-issue">Adicionar</button>`);
+      $('btn-save-issue').addEventListener('click', () => {
+        const title = $('i-title').value.trim();
+        if (!title) return;
+        const p = getProject(currentProjectId);
+        p.issues.push({ id: uuid(), title, description: $('i-desc').value.trim(), severity: $('i-severity').value, date: $('i-date').value });
+        saveData();
+        addHistory(currentProjectId, `Problema registrado: ${title}`);
+        closeModal(); renderProjectDetail(); showToast('Problema registrado', 'success');
+      });
+    }
+
+    function editIssue(id) {
+      const p = getProject(currentProjectId);
+      const i = p.issues.find(x => x.id === id);
+      openModal('Editar Problema', issueForm(i), `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-issue">Salvar</button>`);
+      $('btn-save-issue').addEventListener('click', () => {
+        i.title = $('i-title').value.trim(); i.description = $('i-desc').value.trim();
+        i.severity = $('i-severity').value; i.date = $('i-date').value;
+        saveData();
+        addHistory(currentProjectId, 'Problema atualizado');
+        closeModal(); renderProjectDetail(); showToast('Problema atualizado', 'success');
+      });
+    }
+
+    function deleteIssue(id) {
+      confirmAction('Excluir este problema?', () => {
+        const p = getProject(currentProjectId);
+        p.issues = p.issues.filter(x => x.id !== id);
+        saveData();
+        addHistory(currentProjectId, 'Problema removido');
+        renderProjectDetail(); showToast('Problema excluído', 'success');
+      });
+    }
+
+    // ===== STAKEHOLDERS =====
+    const defaultStakeholderInfluences = [
+      { value: 'low', label: 'Baixa' },
+      { value: 'medium', label: 'Média' },
+      { value: 'high', label: 'Alta' }
+    ];
+
+    function stakeholderForm(s = {}) {
+      const infSelectId = 's-influence';
+      return `
+        <p class="modal-subtitle">Stakeholders são pessoas, áreas ou organizações interessadas no projeto. Quem tem alta influência precisa ser acompanhado de perto.</p>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Nome *</label>
+            <input class="form-input" id="s-name" value="${escapeHtml(s.name || '')}" placeholder="Ex: João Pereira">
+            <p class="form-hint">Nome da pessoa ou área envolvida.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Papel / Função</label>
+            <input class="form-input" id="s-role" value="${escapeHtml(s.role || '')}" placeholder="Ex: Diretor Comercial">
+            <p class="form-hint">Qual a posição ou responsabilidade deste stakeholder?</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Influência</label>
+            <select class="form-select" id="${infSelectId}">${buildSelectOptions('stakeholderInfluence', defaultStakeholderInfluences, s.influence)}</select>
+            <p class="form-hint">Quanto poder essa pessoa tem? Cadastre um novo nível se necessário.</p>
+          </div>
+        </div>
+      `;
+      setTimeout(() => {
+        $(infSelectId).addEventListener('change', e => {
+          if (e.target.value === '__custom__') {
+            e.target.value = s.influence || '';
+            openCustomOptionModal('stakeholderInfluence', defaultStakeholderInfluences, infSelectId);
+          }
+        });
+      }, 0);
+      return html;
+    }
+
+    function addStakeholder() {
+      openModal('Novo Stakeholder', stakeholderForm(), `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-stakeholder">Adicionar</button>`);
+      $('btn-save-stakeholder').addEventListener('click', () => {
+        const name = $('s-name').value.trim();
+        if (!name) return;
+        const p = getProject(currentProjectId);
+        p.stakeholders.push({ id: uuid(), name, role: $('s-role').value.trim(), influence: $('s-influence').value });
+        saveData();
+        addHistory(currentProjectId, `Stakeholder adicionado: ${name}`);
+        closeModal(); renderProjectDetail(); showToast('Stakeholder adicionado', 'success');
+      });
+    }
+
+    function editStakeholder(id) {
+      const p = getProject(currentProjectId);
+      const s = p.stakeholders.find(x => x.id === id);
+      openModal('Editar Stakeholder', stakeholderForm(s), `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-stakeholder">Salvar</button>`);
+      $('btn-save-stakeholder').addEventListener('click', () => {
+        s.name = $('s-name').value.trim(); s.role = $('s-role').value.trim(); s.influence = $('s-influence').value;
+        saveData();
+        addHistory(currentProjectId, 'Stakeholder atualizado');
+        closeModal(); renderProjectDetail(); showToast('Stakeholder atualizado', 'success');
+      });
+    }
+
+    function deleteStakeholder(id) {
+      confirmAction('Excluir este stakeholder?', () => {
+        const p = getProject(currentProjectId);
+        p.stakeholders = p.stakeholders.filter(x => x.id !== id);
+        saveData();
+        addHistory(currentProjectId, 'Stakeholder removido');
+        renderProjectDetail(); showToast('Stakeholder excluído', 'success');
+      });
+    }
+
+    // ===== NOTES =====
+    function addNote() {
+      openModal('Nova Observação', `
+        <p class="modal-subtitle">Registre informações livres que podem ser úteis futuramente: lembretes, conversas, ideias ou qualquer outro detalhe.</p>
+        <div class="form-group full">
+          <label class="form-label">Anotação</label>
+          <textarea class="form-textarea" id="n-content" placeholder="Ex: Em reunião de 04/11, o cliente confirmou preferência pelo layout azul."></textarea>
+          <p class="form-hint">Seja objetivo, mas inclua contexto suficiente para entender depois.</p>
+        </div>`,
+        `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-note">Adicionar</button>`);
+      $('btn-save-note').addEventListener('click', () => {
+        const content = $('n-content').value.trim();
+        if (!content) return;
+        const p = getProject(currentProjectId);
+        p.notes.unshift({ id: uuid(), content, date: new Date().toISOString() });
+        saveData();
+        addHistory(currentProjectId, 'Observação adicionada');
+        closeModal(); renderProjectDetail(); showToast('Anotação salva', 'success');
+      });
+    }
+
+    function editNote(id) {
+      const p = getProject(currentProjectId);
+      const n = p.notes.find(x => x.id === id);
+      openModal('Editar Observação', `
+        <p class="modal-subtitle">Registre informações livres que podem ser úteis futuramente: lembretes, conversas, ideias ou qualquer outro detalhe.</p>
+        <div class="form-group full">
+          <label class="form-label">Anotação</label>
+          <textarea class="form-textarea" id="n-content">${escapeHtml(n.content)}</textarea>
+          <p class="form-hint">Seja objetivo, mas inclua contexto suficiente para entender depois.</p>
+        </div>`,
+        `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-note">Salvar</button>`);
+      $('btn-save-note').addEventListener('click', () => {
+        n.content = $('n-content').value.trim();
+        saveData();
+        addHistory(currentProjectId, 'Observação atualizada');
+        closeModal(); renderProjectDetail(); showToast('Anotação atualizada', 'success');
+      });
+    }
+
+    function deleteNote(id) {
+      confirmAction('Excluir esta anotação?', () => {
+        const p = getProject(currentProjectId);
+        p.notes = p.notes.filter(x => x.id !== id);
+        saveData();
+        addHistory(currentProjectId, 'Observação removida');
+        renderProjectDetail(); showToast('Anotação excluída', 'success');
+      });
+    }
+
+    // ===== REPORT =====
+    function openFinancialModal() {
+      const p = getProject(currentProjectId);
+      openModal('Editar Valores Financeiros', `
+        <p class="modal-subtitle">Atualize os valores financeiros reais do projeto. O sistema recalcula automaticamente o percentual executado e os alertas.</p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Orçamento total disponível (R$)</label>
+            <input type="number" step="0.01" min="0" class="form-input" id="f-budget" value="${p.budget || 0}">
+            <p class="form-hint">Valor total aprovado.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valor já gasto (R$)</label>
+            <input type="number" step="0.01" min="0" class="form-input" id="f-spent" value="${p.spent || 0}">
+            <p class="form-hint">Valor pago/despendido.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valor comprometido (R$)</label>
+            <input type="number" step="0.01" min="0" class="form-input" id="f-committed" value="${p.committed || 0}">
+            <p class="form-hint">Empenhado, mas não pago.</p>
+          </div>
+        </div>
+      `, `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="btn-save-financials">Salvar</button>`);
+      $('btn-save-financials').addEventListener('click', () => {
+        p.budget = Number($('f-budget').value) || 0;
+        p.spent = Number($('f-spent').value) || 0;
+        p.committed = Number($('f-committed').value) || 0;
+        saveData();
+        addHistory(currentProjectId, 'Valores financeiros atualizados');
+        closeModal(); renderProjectDetail(); showToast('Valores financeiros atualizados', 'success');
+      });
+    }
+
+    function generateReport() {
+      const p = getProject(currentProjectId);
+      const progress = projectProgress(p);
+      const planned = plannedProgress(p);
+      const fin = projectFinancials(p);
+      const deadline = projectDeadlineStatus(p);
+      const health = projectHealth(p);
+      const tasks = (p.phases || []).flatMap(f => f.tasks || []);
+      const overdue = tasks.filter(t => t.status !== 'completed' && isOverdue(t.dueDate)).length;
+      const report = `
+RELATÓRIO RESUMIDO - PROJECTMASTER PRO
+======================================
+
+Projeto: ${p.name}
+Responsável: ${p.manager || '-'}
+Período: ${formatDate(p.startDate)} a ${formatDate(p.endDate)}
+Status: ${statusLabels[p.status] || p.status}
+Saúde do projeto: ${health.label}
+Prazo: ${deadline.label}
+
+DESEMPENHO
+Progresso físico: ${progress}%
+Progresso planejado até hoje: ${planned}%
+Orçamento total: ${currencyBRL(fin.budget)}
+Valor gasto: ${currencyBRL(fin.spent)} (${fin.spentPct.toFixed(1)}%)
+Valor comprometido: ${currencyBRL(fin.committed)} (${fin.committedPct.toFixed(1)}%)
+Disponível: ${currencyBRL(fin.available)} (${fin.availablePct.toFixed(1)}%)
+
+ESCOPO
+Objetivo: ${p.objective || '-'}
+Critérios de sucesso: ${p.successCriteria || '-'}
+Entregas: ${(p.deliverables || []).length} (${(p.deliverables || []).filter(d => d.completed).length} concluídas)
+
+CRONOGRAMA
+Fases: ${(p.phases || []).length}
+Tarefas: ${tasks.length} (${tasks.filter(t => t.status === 'completed').length} concluídas, ${overdue} atrasadas)
+
+RISCOS
+Total: ${(p.risks || []).length}
+Alto/Crítico: ${(p.risks || []).filter(r => {
+  const rl = riskLevel(r.probability, r.impact);
+  return rl.level === 'Alto' || rl.level === 'Crítico';
+}).length}
+
+LIÇÕES APRENDIDAS: ${(p.lessons || []).length}
+PROBLEMAS: ${(p.issues || []).length}
+STAKEHOLDERS: ${(p.stakeholders || []).length}
+      `.trim();
+      $('report-output').textContent = report;
+      showToast('Relatório gerado', 'success');
+    }
+
+    function exportJSON() {
+      const p = getProject(currentProjectId);
+      const blob = new Blob([JSON.stringify(p, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `projeto-${p.name.replace(/\s+/g, '_').toLowerCase()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('JSON exportado', 'success');
+    }
+
+    // ===== HELPERS =====
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    // ===== EVENT LISTENERS =====
+    document.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      render();
+
+      $('menu-toggle').addEventListener('click', () => $('sidebar').classList.toggle('collapsed'));
+      $('btn-new-project').addEventListener('click', () => openProjectModal());
+      $('btn-new-project-2').addEventListener('click', () => openProjectModal());
+      $('btn-view-all-projects').addEventListener('click', () => switchView('projects'));
+
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => switchView(item.dataset.view));
+      });
+
+      document.querySelectorAll('#project-tabs .tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+      });
+
+      $('btn-edit-project').addEventListener('click', () => openProjectModal(getProject(currentProjectId)));
+      $('btn-delete-project').addEventListener('click', () => {
+        confirmAction('Excluir permanentemente este projeto e todos os seus dados?', () => deleteProject(currentProjectId));
+      });
+
+      $('btn-save-scope').addEventListener('click', saveScope);
+      $('btn-add-deliverable').addEventListener('click', addDeliverable);
+      $('btn-add-outofscope').addEventListener('click', addOutOfScope);
+      $('btn-add-phase').addEventListener('click', addPhase);
+      $('btn-add-risk').addEventListener('click', addRisk);
+      $('btn-add-lesson').addEventListener('click', addLesson);
+      $('btn-add-issue').addEventListener('click', addIssue);
+      $('btn-add-stakeholder').addEventListener('click', addStakeholder);
+      $('btn-add-note').addEventListener('click', addNote);
+      $('btn-generate-report').addEventListener('click', generateReport);
+      $('btn-export-json').addEventListener('click', exportJSON);
+      document.addEventListener('click', e => {
+        if (e.target && e.target.id === 'btn-edit-financials') openFinancialModal();
+      });
+
+      $('filter-schedule-status').addEventListener('change', () => renderSchedule(getProject(currentProjectId)));
+      $('filter-schedule-priority').addEventListener('change', () => renderSchedule(getProject(currentProjectId)));
+    });
+
+    // Expor funções usadas em atributos inline
+    window.closeModal = closeModal;
+    window.quickEditProject = quickEditProject;
+    window.toggleDeliverable = toggleDeliverable;
+    window.deleteDeliverable = deleteDeliverable;
+    window.editOutOfScope = editOutOfScope;
+    window.deleteOutOfScope = deleteOutOfScope;
+    window.editPhase = editPhase;
+    window.deletePhase = deletePhase;
+    window.openTaskModal = openTaskModal;
+    window.editTask = editTask;
+    window.deleteTask = deleteTask;
+    window.updateTaskStatus = updateTaskStatus;
+    window.editRisk = editRisk;
+    window.deleteRisk = deleteRisk;
+    window.editLesson = editLesson;
+    window.deleteLesson = deleteLesson;
+    window.editIssue = editIssue;
+    window.deleteIssue = deleteIssue;
+    window.editStakeholder = editStakeholder;
+    window.deleteStakeholder = deleteStakeholder;
+    window.editNote = editNote;
+    window.deleteNote = deleteNote;
+  </script>
+</body>
+</html>
